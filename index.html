@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Granville Energy | Field Assessment Tool</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="logo-area">
+            GRANVILLE <span class="logo-dot">ENERGY</span>
+        </div>
+        <div style="font-size: 0.7rem; font-weight: 600; color: var(--text-light);">
+            OFFICIAL SITE ASSESSMENT v2.0
+        </div>
+    </div>
+
+    <div class="stepper">
+        <div class="step active" id="s1">
+            <div class="step-circle">1</div>
+            <span>CLIENT & SUPPLY</span>
+        </div>
+        <div class="step" id="s2">
+            <div class="step-circle">2</div>
+            <span>ENERGY & LOAD</span>
+        </div>
+        <div class="step" id="s3">
+            <div class="step-circle">3</div>
+            <span>TECHNICAL SITE</span>
+        </div>
+    </div>
+
+    <form id="assessmentForm">
+        <div class="content-card">
+            
+            <div class="page active" id="p1">
+                <div class="section-header">
+                    <h2><i data-lucide="user-check"></i> Project & Client Info</h2>
+                    <p>Enter primary contact and site location details.</p>
+                </div>
+                
+                <div class="input-grid">
+                    <div>
+                        <label class="field-label">Lead Engineer</label>
+                        <input type="text" placeholder="Full Name">
+                    </div>
+                    <div>
+                        <label class="field-label">Assessment Date</label>
+                        <input type="date">
+                    </div>
+                    <div class="full-width">
+                        <label class="field-label">Client / Company Name</label>
+                        <input type="text" placeholder="Entity name as per utility bill">
+                    </div>
+                    <div class="full-width">
+                        <label class="field-label">Site Address</label>
+                        <input type="text" placeholder="Physical address for installation">
+                    </div>
+                </div>
+
+                <div class="section-header">
+                    <h2><i data-lucide="zap"></i> Connection Details</h2>
+                    <p>Understanding the current utility environment.</p>
+                </div>
+                <div class="input-grid">
+                    <div>
+                        <label class="field-label">Supply Configuration</label>
+                        <select>
+                            <option>Single Phase</option>
+                            <option>Three Phase</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label">Meter Type</label>
+                        <select>
+                            <option>Prepaid</option>
+                            <option>Postpaid</option>
+                            <option>Smart Meter</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page" id="p2">
+                <div class="section-header">
+                    <h2><i data-lucide="bar-chart-3"></i> Consumption Profile</h2>
+                    <p>Historical energy data used for system sizing.</p>
+                </div>
+
+                <div class="input-grid">
+                    <div>
+                        <label class="field-label">Avg. Monthly kWh</label>
+                        <input type="number" placeholder="0.00">
+                    </div>
+                    <div>
+                        <label class="field-label">Avg. Monthly Spend ($)</label>
+                        <input type="number" placeholder="0.00">
+                    </div>
+                    <div class="full-width">
+                        <label class="field-label">Primary Objective</label>
+                        <div class="option-grid">
+                            <label class="option-card"><input type="radio" name="goal"> Bill Savings</label>
+                            <label class="option-card"><input type="radio" name="goal"> Backup Power</label>
+                            <label class="option-card"><input type="radio" name="goal"> Full Off-Grid</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-header">
+                    <h2><i data-lucide="activity"></i> High-Surge Loads</h2>
+                    <p>Identify equipment requiring high starting currents.</p>
+                </div>
+                <div class="option-grid">
+                    <label class="option-card"><input type="checkbox"> Borehole Pump</label>
+                    <label class="option-card"><input type="checkbox"> Air Conditioning</label>
+                    <label class="option-card"><input type="checkbox"> Cold Storage</label>
+                    <label class="option-card"><input type="checkbox"> Server Infrastructure</label>
+                    <label class="option-card"><input type="checkbox"> Electric Fence</label>
+                    <label class="option-card"><input type="checkbox"> Workshop Gear</label>
+                </div>
+            </div>
+
+            <div class="page" id="p3">
+                <div class="section-header">
+                    <h2><i data-lucide="factory"></i> Infrastructure & Roof</h2>
+                    <p>Physical constraints and installation planning.</p>
+                </div>
+
+                <div class="input-grid">
+                    <div>
+                        <label class="field-label">Roof Material</label>
+                        <select>
+                            <option>IBR / Metal</option>
+                            <option>Tile</option>
+                            <option>Concrete Flat</option>
+                            <option>Ground Mount</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label">Orientation</label>
+                        <select>
+                            <option>North</option>
+                            <option>East / West</option>
+                            <option>South</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label">Main Breaker (Amps)</label>
+                        <input type="text" placeholder="e.g. 60A">
+                    </div>
+                    <div>
+                        <label class="field-label">Cable Distance (m)</label>
+                        <input type="number" placeholder="PV to Inverter">
+                    </div>
+                </div>
+
+                <div class="section-header">
+                    <h2><i data-lucide="camera"></i> Photo Checklist</h2>
+                    <p>Standardized evidence required for design sign-off.</p>
+                </div>
+                <div class="option-grid">
+                    <label class="option-card"><input type="checkbox"> Main DB Open</label>
+                    <label class="option-card"><input type="checkbox"> Roof Conditions</label>
+                    <label class="option-card"><input type="checkbox"> Utility Meter</label>
+                    <label class="option-card"><input type="checkbox"> Placement Area</label>
+                </div>
+                
+                <div style="margin-top: 30px;">
+                    <label class="field-label">Special Engineering Notes</label>
+                    <textarea rows="4" placeholder="Note any shading risks or structural concerns..."></textarea>
+                </div>
+            </div>
+
+            <div class="footer-nav">
+                <button type="button" class="btn btn-secondary hidden" id="prevBtn" onclick="movePage(-1)">
+                    <i data-lucide="chevron-left"></i> Previous
+                </button>
+                <button type="button" class="btn btn-primary" id="nextBtn" onclick="movePage(1)">
+                    Next Step <i data-lucide="chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
