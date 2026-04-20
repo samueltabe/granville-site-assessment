@@ -11,6 +11,8 @@
     const wizardStepTitle = document.getElementById('wizardStepTitle');
     const prevButtons = [document.getElementById('prevSectionBtn'), document.getElementById('prevSectionBtnBottom')];
     const nextButtons = [document.getElementById('nextSectionBtn'), document.getElementById('nextSectionBtnBottom')];
+    const submitButton = form.querySelector('button[type="submit"]');
+    const submitEndpoint = (form.dataset.submitEndpoint || '').trim();
     let currentSectionIndex = 0;
 
     const environmentFields = [
@@ -344,6 +346,73 @@
       statusText.style.color = 'var(--success)';
     }
 
+    function getCsrfToken() {
+      return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    }
+
+    function buildSubmissionFormData() {
+      const payload = new FormData(form);
+      payload.delete('electricitySource');
+      [...document.querySelectorAll('input[name="electricitySource"]:checked')].forEach((field) => {
+        payload.append('electricitySource[]', field.value);
+      });
+      payload.append('submittedAt', new Date().toISOString());
+      return payload;
+    }
+
+    async function submitToLaravel() {
+      if (!submitEndpoint) {
+        statusText.textContent = 'Submission endpoint is not configured. Set data-submit-endpoint on the form tag.';
+        statusText.style.color = 'var(--danger)';
+        return false;
+      }
+
+      const previousLabel = submitButton.textContent;
+      submitButton.disabled = true;
+      submitButton.textContent = 'Submitting...';
+      statusText.textContent = 'Submitting form data to backend...';
+      statusText.style.color = 'var(--text)';
+
+      try {
+        const csrfToken = getCsrfToken();
+        const headers = { Accept: 'application/json' };
+        if (csrfToken) headers['X-CSRF-TOKEN'] = csrfToken;
+
+        const response = await fetch(submitEndpoint, {
+          method: 'POST',
+          headers,
+          body: buildSubmissionFormData()
+        });
+
+        let responseData = null;
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          responseData = await response.json();
+        } else {
+          const text = await response.text();
+          responseData = text ? { message: text } : null;
+        }
+
+        if (!response.ok) {
+          const fallbackMessage = `Submission failed with status ${response.status}.`;
+          const errorMessage = responseData?.message || fallbackMessage;
+          throw new Error(errorMessage);
+        }
+
+        statusText.textContent = responseData?.message || 'Submission successful. Data was sent to Laravel backend.';
+        statusText.style.color = 'var(--success)';
+        saveDraft();
+        return true;
+      } catch (error) {
+        statusText.textContent = error.message || 'Submission failed. Check backend URL, CORS, and Laravel logs.';
+        statusText.style.color = 'var(--danger)';
+        return false;
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = previousLabel;
+      }
+    }
+
     document.addEventListener('click', (e) => {
       const addBtn = e.target.closest('[data-add-repeat]');
       if (addBtn) {
@@ -362,11 +431,10 @@
       if (e.target === assessmentType || e.target.id === 'measurementsTaken') updateVisibility();
     });
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (validateForm(true)) {
-        saveDraft();
-        alert('Form validation passed. You can now export JSON or print to PDF.');
+        await submitToLaravel();
       }
     });
 

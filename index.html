@@ -83,7 +83,7 @@
         </div>
       </div>
 
-      <form id="siteAssessmentForm">
+      <form id="siteAssessmentForm" data-submit-endpoint="">
         <section class="section-card" id="section-0">
           <div class="section-head">
             <div class="section-title-wrap">
@@ -438,6 +438,10 @@
             <div class="summary-box">
               This HTML form is designed to be opened directly in a browser. Draft data saves locally on the same device using browser storage. For a final readable report, use your browser’s Print function and choose <strong>Save as PDF</strong>.
             </div>
+            <p class="hint" style="margin-top:12px;">
+              Backend submission is enabled. Set your Laravel API URL in the form tag:
+              <code>data-submit-endpoint="http://127.0.0.1:8000/api/site-assessments"</code>.
+            </p>
           </div>
         </section>
 
