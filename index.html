@@ -84,7 +84,7 @@
         </div>
       </div>
 
-      <form id="siteAssessmentForm" data-submit-endpoint="">
+      <form id="siteAssessmentForm" data-submit-endpoint="http://127.0.0.1:8000/api/site-assessments">
         <section class="section-card" id="section-0">
           <div class="section-head">
             <div class="section-title-wrap">
@@ -447,6 +447,9 @@
             <p class="hint">
               Set your backend URL on the form tag, for example:
               <code>data-submit-endpoint="https://api.your-domain.com/api/site-assessments"</code>.
+            </p>
+            <p class="hint">
+              If no endpoint is preconfigured, clicking <strong>Submit to Laravel endpoint</strong> will prompt you for the URL once and save it in this browser.
             </p>
           </div>
         </section>

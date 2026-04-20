@@ -7,12 +7,12 @@
     const progressFill = document.getElementById('progressFill');
     const navLinks = [...document.querySelectorAll('.nav-link')];
     const storageKey = 'masterSiteAssessmentDraft_v1';
+    const endpointStorageKey = 'masterSiteAssessmentSubmitEndpoint_v1';
     const sections = [...document.querySelectorAll('form .section-card')];
     const wizardStepTitle = document.getElementById('wizardStepTitle');
     const prevButtons = [document.getElementById('prevSectionBtn'), document.getElementById('prevSectionBtnBottom')];
     const nextButtons = [document.getElementById('nextSectionBtn'), document.getElementById('nextSectionBtnBottom')];
     const submitButton = form.querySelector('button[type="submit"]');
-    const submitEndpoint = (form.dataset.submitEndpoint || '').trim();
     let currentSectionIndex = 0;
 
     const environmentFields = [
@@ -357,6 +357,20 @@
       return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     }
 
+    function resolveSubmitEndpoint() {
+      const fromDataset = (form.dataset.submitEndpoint || '').trim();
+      const fromStorage = (localStorage.getItem(endpointStorageKey) || '').trim();
+      const fromGlobal = (window.SITE_ASSESSMENT_API_URL || '').trim();
+      return fromDataset || fromStorage || fromGlobal || '';
+    }
+
+    function saveSubmitEndpoint(url) {
+      const normalized = (url || '').trim();
+      if (!normalized) return;
+      form.dataset.submitEndpoint = normalized;
+      localStorage.setItem(endpointStorageKey, normalized);
+    }
+
     function buildSubmissionFormData() {
       const payload = new FormData(form);
       payload.delete('electricitySource');
@@ -368,10 +382,19 @@
     }
 
     async function submitToLaravel() {
-      if (!submitEndpoint) {
-        statusText.textContent = 'Submission endpoint is not configured. Set data-submit-endpoint on the form before submitting.';
-        statusText.style.color = 'var(--danger)';
-        return false;
+      let endpoint = resolveSubmitEndpoint();
+      if (!endpoint) {
+        const enteredUrl = window.prompt(
+          'Enter your Laravel endpoint URL (example: https://api.your-domain.com/api/site-assessments):',
+          'https://api.your-domain.com/api/site-assessments'
+        );
+        if (!enteredUrl || !enteredUrl.trim()) {
+          statusText.textContent = 'Submission cancelled. No Laravel endpoint URL was provided.';
+          statusText.style.color = 'var(--danger)';
+          return false;
+        }
+        saveSubmitEndpoint(enteredUrl);
+        endpoint = resolveSubmitEndpoint();
       }
 
       const previousLabel = submitButton.textContent;
@@ -385,7 +408,7 @@
         const headers = { Accept: 'application/json' };
         if (csrfToken) headers['X-CSRF-TOKEN'] = csrfToken;
 
-        const response = await fetch(submitEndpoint, {
+        const response = await fetch(endpoint, {
           method: 'POST',
           headers,
           body: buildSubmissionFormData()
@@ -461,6 +484,10 @@
     });
 
     generateRef();
+    const restoredEndpoint = (localStorage.getItem(endpointStorageKey) || '').trim();
+    if (restoredEndpoint && !(form.dataset.submitEndpoint || '').trim()) {
+      form.dataset.submitEndpoint = restoredEndpoint;
+    }
     addRepeat('measurement');
     addRepeat('roof');
     addRepeat('shade');
