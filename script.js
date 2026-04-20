@@ -1,67 +1,395 @@
-lucide.createIcons();
 
-let currentStep = 1;
-const totalSteps = 3;
+    const form = document.getElementById('siteAssessmentForm');
+    const assessmentType = document.getElementById('assessmentType');
+    const assessmentRef = document.getElementById('assessmentRef');
+    const statusText = document.getElementById('statusText');
+    const progressText = document.getElementById('progressText');
+    const progressFill = document.getElementById('progressFill');
+    const navLinks = [...document.querySelectorAll('.nav-link')];
+    const storageKey = 'masterSiteAssessmentDraft_v1';
+    const sections = [...document.querySelectorAll('form .section-card')];
+    const wizardStepTitle = document.getElementById('wizardStepTitle');
+    const prevButtons = [document.getElementById('prevSectionBtn'), document.getElementById('prevSectionBtnBottom')];
+    const nextButtons = [document.getElementById('nextSectionBtn'), document.getElementById('nextSectionBtnBottom')];
+    let currentSectionIndex = 0;
 
-function movePage(delta) {
-    // 1. Logic to handle the final submission
-    if (currentStep === totalSteps && delta === 1) {
-        submitToHubSpot();
+    const environmentFields = [
+      'Salt Mist / Saline Atmosphere', 'High Humidity', 'Dust', 'Heavy Rain', 'Standing Water',
+      'Wind Exposure', 'Vibration', 'Corrosive Industrial Atmosphere', 'High Temperature', 'Lightning Exposure'
+    ];
+
+    const environmentGrid = document.getElementById('environmentGrid');
+    environmentFields.forEach((label, index) => {
+      const safe = 'env_' + index;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'field col-3';
+      wrapper.innerHTML = `
+        <label for="${safe}">${label} <span class="required-mark">*</span></label>
+        <select id="${safe}" name="${safe}" required>
+          <option value="">Select</option>
+          <option>Yes</option>
+          <option>No</option>
+          <option>Unknown</option>
+        </select>`;
+      environmentGrid.appendChild(wrapper);
+    });
+
+    ['Recommended Mounting Material', 'Cable / Conduit Protection Needs', 'Enclosure IP Rating Considerations', 'BESS Environmental Protection Needs'].forEach((label, idx) => {
+      const safe = 'env_text_' + idx;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'field col-3';
+      wrapper.innerHTML = `
+        <label for="${safe}">${label} <span class="required-mark">*</span></label>
+        <textarea id="${safe}" name="${safe}" required></textarea>`;
+      environmentGrid.appendChild(wrapper);
+    });
+
+    const repeatMaps = {
+      measurement: { list: document.getElementById('measurementsList'), template: 'measurementTemplate' },
+      roof: { list: document.getElementById('roofList'), template: 'roofTemplate' },
+      ground: { list: document.getElementById('groundList'), template: 'groundTemplate' },
+      shade: { list: document.getElementById('shadingList'), template: 'shadeTemplate' }
+    };
+
+    function generateRef() {
+      const d = new Date();
+      const y = d.getFullYear().toString().slice(-2);
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const rand = Math.random().toString(36).slice(2, 7).toUpperCase();
+      assessmentRef.value = `SA-${y}${m}${day}-${rand}`;
+    }
+
+    function addRepeat(type, data = {}) {
+      const { list, template } = repeatMaps[type];
+      const fragment = document.getElementById(template).content.cloneNode(true);
+      const card = fragment.querySelector('.repeat-card');
+      const index = list.children.length + 1;
+      card.dataset.repeatType = type;
+      card.querySelector('.repeat-head strong').textContent += ` ${index}`;
+      card.querySelectorAll('[data-name]').forEach((el) => {
+        const key = `${type}_${index}_${el.dataset.name}`;
+        el.name = key;
+        el.id = key;
+        if (data[key] !== undefined) el.value = data[key];
+      });
+      list.appendChild(fragment);
+      updateVisibility();
+      updateProgress();
+    }
+
+    function ensureMinimumRepeats() {
+      if (!document.getElementById('measurementsList').children.length) addRepeat('measurement');
+      if (!document.getElementById('roofList').children.length) addRepeat('roof');
+      if (!document.getElementById('shadingList').children.length) addRepeat('shade');
+      const type = assessmentType.value;
+      if ((type === 'Commercial' || type === 'Utility-Scale') && !document.getElementById('groundList').children.length) addRepeat('ground');
+      if (type === 'Residential') document.getElementById('groundList').innerHTML = '';
+    }
+
+    function setSectorRequirement(selector, active) {
+      document.querySelectorAll(selector).forEach((block) => {
+        block.classList.toggle('hidden', !active);
+        block.querySelectorAll('input, select, textarea').forEach((field) => {
+          const isFile = field.type === 'file';
+          if (active) {
+            if (field.closest('.field, .repeat-card')) {
+              field.dataset.wasSectorActive = 'true';
+            }
+            if (field.closest('.field') && field.previousElementSibling && field.previousElementSibling.innerText.includes('*') && !isFile) {
+              field.required = true;
+            }
+          } else {
+            field.required = false;
+            if (!isFile) field.value = '';
+          }
+        });
+      });
+    }
+
+    function updateVisibility() {
+      const type = assessmentType.value;
+      setSectorRequirement('.sector-residential', type === 'Residential');
+      setSectorRequirement('.sector-commercial', type === 'Commercial');
+      setSectorRequirement('.sector-utility', type === 'Utility-Scale');
+
+      document.querySelectorAll('.rooftop-block').forEach(el => {
+        const show = type === 'Residential' || type === 'Commercial';
+        el.classList.toggle('hidden', !show);
+        el.querySelectorAll('input, select, textarea').forEach(f => f.required = show);
+      });
+
+      document.querySelectorAll('.ground-block').forEach(el => {
+        const show = type === 'Commercial' || type === 'Utility-Scale';
+        el.classList.toggle('hidden', !show);
+        el.querySelectorAll('input, select, textarea').forEach(f => f.required = show);
+      });
+
+      document.getElementById('measurementsBlockSection').classList.toggle('hidden', document.getElementById('measurementsTaken').value === 'No');
+      document.querySelectorAll('#measurementsList input, #measurementsList select, #measurementsList textarea').forEach((f) => {
+        f.required = document.getElementById('measurementsTaken').value !== 'No';
+      });
+
+      ensureMinimumRepeats();
+      updateProgress();
+    }
+
+    function logicallyVisible(field) {
+      if (field.disabled || field.type === 'hidden') return false;
+      if (field.closest('.hidden')) return false;
+      return true;
+    }
+
+    function visibleField(field) {
+      return logicallyVisible(field);
+    }
+
+    function checkboxGroupSatisfied(name) {
+      return [...document.querySelectorAll(`input[name="${name}"]`)].some(cb => cb.checked);
+    }
+
+    function getVisibleRequiredFields() {
+      return [...form.querySelectorAll('input, select, textarea')].filter(field => visibleField(field) && field.required);
+    }
+
+    function getSectionRequiredFields(section) {
+      return [...section.querySelectorAll('input, select, textarea')].filter(field => logicallyVisible(field) && field.required);
+    }
+
+    function validateSection(index, showMessage = true) {
+      const section = sections[index];
+      if (!section) return true;
+      const fields = getSectionRequiredFields(section);
+      let firstInvalid = null;
+      let valid = true;
+
+      if (section.id === 'section-1' && !checkboxGroupSatisfied('electricitySource')) {
+        valid = false;
+        firstInvalid = firstInvalid || document.querySelector('input[name="electricitySource"]');
+      }
+
+      fields.forEach(field => {
+        if (field.type === 'file') return;
+        if (!field.checkValidity() || !String(field.value).trim()) {
+          valid = false;
+          if (!firstInvalid) firstInvalid = field;
+        }
+      });
+
+      if (!valid && showMessage) {
+        statusText.textContent = 'Please complete all required fields in this section before moving on.';
+        statusText.style.color = 'var(--danger)';
+        firstInvalid?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        firstInvalid?.focus();
+      }
+
+      updateProgress();
+      return valid;
+    }
+
+    function renderWizard() {
+      sections.forEach((section, index) => section.classList.toggle('wizard-hidden', index !== currentSectionIndex));
+      navLinks.forEach((link, index) => link.classList.toggle('active', index === currentSectionIndex));
+      const current = sections[currentSectionIndex];
+      wizardStepTitle.textContent = `Section ${currentSectionIndex + 1} of ${sections.length} · ${current.querySelector('h3')?.textContent || ''}`;
+      prevButtons.forEach(btn => btn.disabled = currentSectionIndex === 0);
+      nextButtons.forEach(btn => {
+        btn.disabled = currentSectionIndex === sections.length - 1;
+        btn.textContent = currentSectionIndex === sections.length - 2 ? 'Review final step →' : 'Next →';
+      });
+      current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function goToSection(index, options = {}) {
+      const bounded = Math.max(0, Math.min(index, sections.length - 1));
+      currentSectionIndex = bounded;
+      renderWizard();
+      if (!options.silent) updateProgress();
+    }
+
+    function goNextSection() {
+      if (!validateSection(currentSectionIndex, true)) return;
+      goToSection(currentSectionIndex + 1);
+    }
+
+    function goPrevSection() {
+      goToSection(currentSectionIndex - 1);
+    }
+
+    function updateProgress() {
+      const fields = getVisibleRequiredFields();
+      let complete = 0;
+      fields.forEach(field => {
+        if (field.type === 'checkbox') return;
+        if (field.type === 'file') {
+          if (field.files && field.files.length > 0) complete++;
+        } else if (field.value && String(field.value).trim() !== '') {
+          complete++;
+        }
+      });
+      const checkboxBonus = checkboxGroupSatisfied('electricitySource') ? 1 : 0;
+      const checkboxRequired = 1;
+      const total = fields.filter(f => f.type !== 'checkbox').length + checkboxRequired;
+      const done = complete + checkboxBonus;
+      const percent = total ? Math.round((done / total) * 100) : 0;
+      progressText.textContent = `${percent}%`;
+      progressFill.style.width = `${percent}%`;
+    }
+
+    function validateForm(showMessage = true) {
+      const fields = getVisibleRequiredFields();
+      let firstInvalid = null;
+      let valid = true;
+
+      if (!checkboxGroupSatisfied('electricitySource')) {
+        valid = false;
+        firstInvalid = firstInvalid || document.querySelector('input[name="electricitySource"]');
+      }
+
+      fields.forEach(field => {
+        if (field.type === 'file') {
+          return;
+        }
+        if (!field.checkValidity() || !String(field.value).trim()) {
+          valid = false;
+          if (!firstInvalid) firstInvalid = field;
+        }
+      });
+
+      if (!valid && showMessage) {
+        statusText.textContent = 'Please complete all visible required fields before submitting.';
+        statusText.style.color = 'var(--danger)';
+        firstInvalid?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        firstInvalid?.focus();
+      } else if (valid && showMessage) {
+        statusText.textContent = 'All visible required fields are complete.';
+        statusText.style.color = 'var(--success)';
+      }
+      updateProgress();
+      return valid;
+    }
+
+    function gatherData() {
+      const data = {};
+      const fd = new FormData(form);
+      for (const [key, value] of fd.entries()) {
+        if (value instanceof File && value.name === '') continue;
+        if (data[key]) {
+          if (!Array.isArray(data[key])) data[key] = [data[key]];
+          data[key].push(value instanceof File ? value.name : value);
+        } else {
+          data[key] = value instanceof File ? value.name : value;
+        }
+      }
+      data.electricitySource = [...document.querySelectorAll('input[name="electricitySource"]:checked')].map(el => el.value);
+      return data;
+    }
+
+    function saveDraft() {
+      localStorage.setItem(storageKey, JSON.stringify(gatherData()));
+      statusText.textContent = 'Draft saved to this browser.';
+      statusText.style.color = 'var(--success)';
+    }
+
+    function loadDraft() {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) {
+        statusText.textContent = 'No saved draft found in this browser.';
+        statusText.style.color = 'var(--danger)';
         return;
+      }
+      const data = JSON.parse(raw);
+      if (data.assessmentType) assessmentType.value = data.assessmentType;
+      updateVisibility();
+      [...form.querySelectorAll('input, select, textarea')].forEach(field => {
+        if (field.type === 'file' || field.type === 'checkbox' || !field.name) return;
+        if (data[field.name] !== undefined) field.value = data[field.name];
+      });
+      document.querySelectorAll('input[name="electricitySource"]').forEach(cb => {
+        cb.checked = Array.isArray(data.electricitySource) && data.electricitySource.includes(cb.value);
+      });
+
+      ['measurement', 'roof', 'ground', 'shade'].forEach(type => {
+        repeatMaps[type].list.innerHTML = '';
+        const groups = Object.keys(data).filter(key => key.startsWith(type + '_')).reduce((acc, key) => {
+          const parts = key.split('_');
+          const idx = parts[1];
+          acc[idx] = acc[idx] || {};
+          acc[idx][key] = data[key];
+          return acc;
+        }, {});
+        const entries = Object.values(groups);
+        if (entries.length) entries.forEach(item => addRepeat(type, item));
+      });
+
+      if (!document.getElementById('measurementsList').children.length) addRepeat('measurement');
+      if (!document.getElementById('roofList').children.length) addRepeat('roof');
+      if ((assessmentType.value === 'Commercial' || assessmentType.value === 'Utility-Scale') && !document.getElementById('groundList').children.length) addRepeat('ground');
+      if (!document.getElementById('shadingList').children.length) addRepeat('shade');
+
+      statusText.textContent = 'Draft loaded from this browser.';
+      statusText.style.color = 'var(--success)';
+      updateProgress();
     }
 
-    // Hide Current
-    document.getElementById(`p${currentStep}`).classList.remove('active');
-    document.getElementById(`s${currentStep}`).classList.remove('active');
-
-    currentStep += delta;
-
-    // Show New
-    document.getElementById(`p${currentStep}`).classList.add('active');
-    document.getElementById(`s${currentStep}`).classList.add('active');
-
-    // UI Controls
-    document.getElementById('prevBtn').classList.toggle('hidden', currentStep === 1);
-    
-    const nextBtn = document.getElementById('nextBtn');
-    if (currentStep === totalSteps) {
-        nextBtn.innerHTML = 'Finish Assessment <i data-lucide="check"></i>';
-    } else {
-        nextBtn.innerHTML = 'Next Step <i data-lucide="chevron-right"></i>';
+    function exportJson() {
+      const blob = new Blob([JSON.stringify(gatherData(), null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${assessmentRef.value || 'site-assessment'}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      statusText.textContent = 'JSON export downloaded.';
+      statusText.style.color = 'var(--success)';
     }
 
-    lucide.createIcons();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
+    document.addEventListener('click', (e) => {
+      const addBtn = e.target.closest('[data-add-repeat]');
+      if (addBtn) {
+        addRepeat(addBtn.dataset.addRepeat);
+      }
+      const removeBtn = e.target.closest('[data-remove-repeat]');
+      if (removeBtn) {
+        removeBtn.closest('.repeat-card')?.remove();
+        updateProgress();
+      }
+    });
 
-function submitToHubSpot() {
-    const form = document.getElementById('assessmentForm');
-    const emailValue = form.querySelector('input[name="email"]').value;
+    form.addEventListener('input', updateProgress);
+    form.addEventListener('change', updateProgress);
+    form.addEventListener('change', (e) => {
+      if (e.target === assessmentType || e.target.id === 'measurementsTaken') updateVisibility();
+    });
 
-    if (!emailValue) {
-        alert("Please provide a client email before submitting.");
-        // Jump back to page 1 if email is missing
-        movePage(-(totalSteps - 1));
-        return;
-    }
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (validateForm(true)) {
+        saveDraft();
+        alert('Form validation passed. You can now export JSON or print to PDF.');
+      }
+    });
 
-    // 2. Identify the user for HubSpot Tracker
-    var _hsq = window._hsq = window._hsq || [];
-    _hsq.push(["identify", {
-        email: emailValue
-    }]);
+    document.getElementById('saveDraftBtn').addEventListener('click', saveDraft);
+    document.getElementById('loadDraftBtn').addEventListener('click', loadDraft);
+    document.getElementById('exportJsonBtn').addEventListener('click', exportJson);
+    document.getElementById('printBtn').addEventListener('click', () => window.print());
+    document.getElementById('validateBtn').addEventListener('click', () => validateForm(true));
+    prevButtons.forEach(btn => btn.addEventListener('click', goPrevSection));
+    nextButtons.forEach(btn => btn.addEventListener('click', goNextSection));
+    navLinks.forEach((link, index) => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (index > currentSectionIndex && !validateSection(currentSectionIndex, true)) return;
+        goToSection(index);
+      });
+    });
 
-    // 3. Trigger the submission
-    // We dispatch a 'submit' event so the HubSpot tracker "hears" it
-    const event = new Event('submit', { bubbles: true, cancelable: true });
-    form.dispatchEvent(event);
-
-    alert("Granville Energy: Site Assessment Submitted Successfully.");
-    
-    // Give HubSpot a second to capture before reloading
-    setTimeout(() => {
-        location.reload();
-    }, 1000);
-}
-
-// Keep your existing option-card toggle logic here...
+    generateRef();
+    addRepeat('measurement');
+    addRepeat('roof');
+    addRepeat('shade');
+    updateVisibility();
+    goToSection(0, { silent: true });
+    updateProgress();
+  

@@ -1,208 +1,515 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="shortcut icon" href="/img/icon.png" type="image/x-icon">
-    <title>Granville Energy | Field Assessment Tool</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Master Site Assessment Form</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-badge">☀</div>
+        <div>
+          <h1>Master Site Assessment</h1>
+          <p>Interactive engineering form</p>
+        </div>
+      </div>
 
-<div class="container">
-    <div class="header">
-        <div class="logo-area">
-            <a href="/">
-                <img src="img/logoblack.png" alt="">
-            </a>
+      <div class="progress-card">
+        <div class="progress-row">
+          <strong>Completion</strong>
+          <span id="progressText">0%</span>
         </div>
-        <div style="font-size: 0.7rem; font-weight: 600; color: var(--text-light);">
-            OFFICIAL SITE ASSESSMENT v2.0
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <p class="hint" style="margin-top:10px;">Only visible fields count toward completion. Every visible field is required before final submission.</p>
+      </div>
+
+      <div class="quick-actions">
+        <div class="action-row">
+          <button type="button" class="btn btn-secondary" id="saveDraftBtn">💾 Save draft</button>
+          <button type="button" class="btn btn-secondary" id="loadDraftBtn">↺ Load draft</button>
+          <button type="button" class="btn btn-secondary" id="exportJsonBtn">⤓ Export JSON</button>
         </div>
+      </div>
+
+      <nav class="nav-list" id="sectionNav">
+        <a class="nav-link active" href="#section-0">🧾 Header</a>
+        <a class="nav-link" href="#section-1">🏢 Client & supply</a>
+        <a class="nav-link" href="#section-2">⚡ Energy & load</a>
+        <a class="nav-link" href="#section-3">🛠 Technical site</a>
+        <a class="nav-link" href="#section-end">✅ Final actions</a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <section class="hero">
+        <div>
+          <div class="eyebrow">✨ Modern white-light UI with branching logic</div>
+          <h2>Master Site Assessment Form</h2>
+          <p>
+            A clean browser-based assessment form designed for Residential, Commercial, and Utility-Scale projects. It includes branching logic, dynamic repeating blocks, visible-field validation, local draft saving, and print-friendly output for PDF export.
+          </p>
+        </div>
+        <div class="hero-grid">
+          <div class="mini"><div class="icon">🧠</div><strong>Smart branching</strong><span>Fields appear only when relevant to the selected assessment type.</span></div>
+          <div class="mini"><div class="icon">📎</div><strong>Upload ready</strong><span>Utility bills, load data, and supporting documents can be attached directly.</span></div>
+          <div class="mini"><div class="icon">📐</div><strong>Engineering focused</strong><span>Built around technical data needed for design, planning, and proposal support.</span></div>
+          <div class="mini"><div class="icon">🖨️</div><strong>Print friendly</strong><span>Use your browser’s Print dialog to save a clean PDF report after completion.</span></div>
+        </div>
+      </section>
+
+      <div class="wizard-topbar">
+        <div class="wizard-step">
+          <span>🧭</span>
+          <div><strong id="wizardStepTitle">Section 1 of 5</strong><div class="hint" style="margin:2px 0 0;">Use Next and Previous to move through the form one section at a time.</div></div>
+        </div>
+        <div class="wizard-nav">
+          <button type="button" class="btn btn-secondary" id="prevSectionBtn">← Previous</button>
+          <button type="button" class="btn btn-primary" id="nextSectionBtn">Next →</button>
+        </div>
+      </div>
+
+      <form id="siteAssessmentForm">
+        <section class="section-card" id="section-0">
+          <div class="section-head">
+            <div class="section-title-wrap">
+              <div class="section-icon">🧾</div>
+              <div>
+                <h3>Section 0 · Internal Form Header</h3>
+                <p>Identify the assessment, assessor, and client-side point of contact.</p>
+              </div>
+            </div>
+            <span class="pill">Required</span>
+          </div>
+          <div class="section-body">
+            <div class="grid">
+              <div class="field col-6">
+                <label for="assessmentType">Assessment Type <span class="required-mark">*</span></label>
+                <select id="assessmentType" name="assessmentType" required>
+                  <option value="">Select assessment type</option>
+                  <option value="Residential">Residential</option>
+                  <option value="Commercial">Commercial</option>
+                  <option value="Utility-Scale">Utility-Scale</option>
+                </select>
+              </div>
+              <div class="field col-6">
+                <label for="assessmentRef">Assessment Reference ID</label>
+                <input id="assessmentRef" name="assessmentRef" type="text" readonly />
+                <div class="hint">Auto-generated unique reference.</div>
+              </div>
+              <div class="field col-4"><label for="siteVisitDate">Date of Site Visit <span class="required-mark">*</span></label><input id="siteVisitDate" name="siteVisitDate" type="date" required /></div>
+              <div class="field col-4"><label for="startTime">Start Time <span class="required-mark">*</span></label><input id="startTime" name="startTime" type="time" required /></div>
+              <div class="field col-4"><label for="endTime">End Time <span class="required-mark">*</span></label><input id="endTime" name="endTime" type="time" required /></div>
+              <div class="field col-6"><label for="assessorName">Assessor Name <span class="required-mark">*</span></label><input id="assessorName" name="assessorName" type="text" required /></div>
+              <div class="field col-6"><label for="assessorRole">Assessor Role <span class="required-mark">*</span></label><input id="assessorRole" name="assessorRole" type="text" required /></div>
+              <div class="field col-6"><label for="assessorEmail">Assessor Email <span class="required-mark">*</span></label><input id="assessorEmail" name="assessorEmail" type="email" required /></div>
+              <div class="field col-6"><label for="assessorPhone">Assessor Contact Number <span class="required-mark">*</span></label><input id="assessorPhone" name="assessorPhone" type="tel" required /></div>
+              <div class="field col-6"><label for="clientRepName">Client / Site Representative Name <span class="required-mark">*</span></label><input id="clientRepName" name="clientRepName" type="text" required /></div>
+              <div class="field col-6"><label for="clientRepRole">Client / Site Representative Role <span class="required-mark">*</span></label><input id="clientRepRole" name="clientRepRole" type="text" placeholder="Role title or N/A" required /></div>
+              <div class="field col-6"><label for="clientRepPhone">Client / Site Representative Contact Number <span class="required-mark">*</span></label><input id="clientRepPhone" name="clientRepPhone" type="tel" placeholder="Phone number or N/A" required /></div>
+              <div class="field col-6"><label for="clientRepEmail">Client / Site Representative Email <span class="required-mark">*</span></label><input id="clientRepEmail" name="clientRepEmail" type="email" placeholder="Valid email or N/A" required /></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-card" id="section-1">
+          <div class="section-head">
+            <div class="section-title-wrap">
+              <div class="section-icon">🏢</div>
+              <div>
+                <h3>Section 1 · Client & Supply Information</h3>
+                <p>Capture who the client is, where the site is located, and how the site is currently supplied with power.</p>
+              </div>
+            </div>
+            <span class="pill">All sectors</span>
+          </div>
+          <div class="section-body">
+            <div class="grid">
+              <div class="field col-6"><label for="clientCompany">Client / Company Name <span class="required-mark">*</span></label><input id="clientCompany" name="clientCompany" type="text" required /></div>
+              <div class="field col-6"><label for="dealProjectName">Deal / Project Name <span class="required-mark">*</span></label><input id="dealProjectName" name="dealProjectName" type="text" required /></div>
+              <div class="field col-6"><label for="siteName">Site Name <span class="required-mark">*</span></label><input id="siteName" name="siteName" type="text" required /></div>
+              <div class="field col-6"><label for="gpsCoordinates">GPS Coordinates <span class="required-mark">*</span></label><input id="gpsCoordinates" name="gpsCoordinates" type="text" placeholder="Latitude / Longitude" required /></div>
+              <div class="field"><label for="siteAddress">Site Address <span class="required-mark">*</span></label><textarea id="siteAddress" name="siteAddress" required></textarea></div>
+              <div class="field col-6">
+                <label for="siteType">Sector / Site Type <span class="required-mark">*</span></label>
+                <select id="siteType" name="siteType" required>
+                  <option value="">Select site type</option>
+                  <option>House</option>
+                  <option>Estate</option>
+                  <option>Lodge</option>
+                  <option>Office</option>
+                  <option>Retail</option>
+                  <option>School</option>
+                  <option>Factory</option>
+                  <option>Warehouse</option>
+                  <option>Mine</option>
+                  <option>Farm</option>
+                  <option>Industrial Site</option>
+                  <option>Land Parcel</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div class="field col-6"><label for="operatingHours">Operating Hours <span class="required-mark">*</span></label><input id="operatingHours" name="operatingHours" type="text" placeholder="Hours or N/A" required /></div>
+              <div class="field"><label for="facilityDescription">Property / Facility Description <span class="required-mark">*</span></label><textarea id="facilityDescription" name="facilityDescription" required></textarea></div>
+              <div class="field col-4"><label for="securityAccess">Security / Access Requirements <span class="required-mark">*</span></label><textarea id="securityAccess" name="securityAccess" required></textarea></div>
+              <div class="field col-4"><label for="siteRestrictions">Site Access Restrictions <span class="required-mark">*</span></label><textarea id="siteRestrictions" name="siteRestrictions" required></textarea></div>
+              <div class="field col-4"><label for="shutdownRestrictions">Shutdown Restrictions <span class="required-mark">*</span></label><textarea id="shutdownRestrictions" name="shutdownRestrictions" required></textarea></div>
+
+              <div class="field">
+                <label>Current Electricity Source <span class="required-mark">*</span></label>
+                <div class="check-grid">
+                  <label class="check"><input type="checkbox" name="electricitySource" value="Utility grid" required><span>🔌 Utility grid</span></label>
+                  <label class="check"><input type="checkbox" name="electricitySource" value="Generator"><span>⚙️ Generator</span></label>
+                  <label class="check"><input type="checkbox" name="electricitySource" value="Solar PV"><span>☀️ Solar PV</span></label>
+                  <label class="check"><input type="checkbox" name="electricitySource" value="Battery storage"><span>🔋 Battery storage</span></label>
+                  <label class="check"><input type="checkbox" name="electricitySource" value="UPS"><span>🧰 UPS</span></label>
+                  <label class="check"><input type="checkbox" name="electricitySource" value="No formal supply"><span>🚫 No formal supply</span></label>
+                  <label class="check"><input type="checkbox" name="electricitySource" value="Other"><span>➕ Other</span></label>
+                </div>
+              </div>
+
+              <div class="field col-4"><label for="utilityProvider">Utility Provider <span class="required-mark">*</span></label><input id="utilityProvider" name="utilityProvider" type="text" placeholder="Provider name or N/A" required /></div>
+              <div class="field col-4"><label for="incomingVoltage">Incoming Supply Voltage <span class="required-mark">*</span></label><input id="incomingVoltage" name="incomingVoltage" type="text" placeholder="Voltage or N/A" required /></div>
+              <div class="field col-4"><label for="frequency">Frequency <span class="required-mark">*</span></label><select id="frequency" name="frequency" required><option value="">Select</option><option>50 Hz</option><option>60 Hz</option><option>Other</option><option>N/A</option></select></div>
+              <div class="field col-4"><label for="phases">Number of Phases <span class="required-mark">*</span></label><select id="phases" name="phases" required><option value="">Select</option><option>Single phase</option><option>Three phase</option><option>Other</option><option>N/A</option></select></div>
+              <div class="field col-4 sector-commercial sector-utility"><label for="supplyType">Supply Type <span class="required-mark">*</span></label><select id="supplyType" name="supplyType"><option value="">Select</option><option>LV</option><option>MV</option><option>Both</option><option>N/A</option></select></div>
+              <div class="field col-4"><label for="meterLocation">Meter Location <span class="required-mark">*</span></label><input id="meterLocation" name="meterLocation" type="text" placeholder="Description or N/A" required /></div>
+              <div class="field col-6"><label for="mainSupplyLocation">Main Incoming Supply Location <span class="required-mark">*</span></label><textarea id="mainSupplyLocation" name="mainSupplyLocation" required></textarea></div>
+              <div class="field col-6 sector-commercial sector-utility"><label for="transformerDetails">Main Transformer Details <span class="required-mark">*</span></label><textarea id="transformerDetails" name="transformerDetails"></textarea></div>
+              <div class="field col-6"><label for="generatorDetails">Existing Generator Details <span class="required-mark">*</span></label><textarea id="generatorDetails" name="generatorDetails" required></textarea></div>
+              <div class="field col-6"><label for="upsDetails">Existing UPS / Storage Details <span class="required-mark">*</span></label><textarea id="upsDetails" name="upsDetails" required></textarea></div>
+              <div class="field"><label for="criticalOps">Critical Operations / Loads That Cannot Be Interrupted <span class="required-mark">*</span></label><textarea id="criticalOps" name="criticalOps" required></textarea></div>
+              <div class="field col-4"><label for="utilityBillsAvailable">Utility Bills Available? <span class="required-mark">*</span></label><select id="utilityBillsAvailable" name="utilityBillsAvailable" required><option value="">Select</option><option>Yes</option><option>No</option><option>To be confirmed</option><option>Not available on site</option></select></div>
+              <div class="field col-4"><label for="utilityBillsUpload">Upload Utility Bills</label><input id="utilityBillsUpload" name="utilityBillsUpload" type="file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" /></div>
+              <div class="field col-4"><label for="billsUploadNotes">Bills Upload Notes <span class="required-mark">*</span></label><textarea id="billsUploadNotes" name="billsUploadNotes" required></textarea></div>
+            </div>
+
+            <div class="subsection sector-residential">
+              <h4>Additional Residential Fields</h4>
+              <p>Shorter residential-specific questions from the blueprint.</p>
+              <div class="grid">
+                <div class="field col-4"><label for="propertyType">Property Type <span class="required-mark">*</span></label><select id="propertyType" name="propertyType"><option value="">Select</option><option>Freestanding house</option><option>Townhouse</option><option>Apartment</option><option>Smallholding</option><option>Other</option></select></div>
+                <div class="field col-4"><label for="occupants">Number of Occupants <span class="required-mark">*</span></label><input id="occupants" name="occupants" type="text" placeholder="Value or To be confirmed" /></div>
+                <div class="field col-4"><label for="resSupply">Municipal or Prepaid Supply <span class="required-mark">*</span></label><select id="resSupply" name="resSupply"><option value="">Select</option><option>Municipal billed</option><option>Prepaid meter</option><option>Both</option><option>Other</option><option>N/A</option></select></div>
+              </div>
+            </div>
+
+            <div class="subsection sector-commercial">
+              <h4>Additional Commercial Fields</h4>
+              <div class="grid">
+                <div class="field col-4"><label for="businessType">Business Type <span class="required-mark">*</span></label><input id="businessType" name="businessType" type="text" /></div>
+                <div class="field col-4"><label for="facilityUse">Main Operational Use of Facility <span class="required-mark">*</span></label><textarea id="facilityUse" name="facilityUse"></textarea></div>
+                <div class="field col-4"><label for="continuityReq">Power Continuity Requirements <span class="required-mark">*</span></label><textarea id="continuityReq" name="continuityReq"></textarea></div>
+              </div>
+            </div>
+
+            <div class="subsection sector-utility">
+              <h4>Additional Utility-Scale Fields</h4>
+              <div class="grid">
+                <div class="field col-4"><label for="landOwnership">Land Ownership Status <span class="required-mark">*</span></label><select id="landOwnership" name="landOwnership"><option value="">Select</option><option>Client owned</option><option>Leased</option><option>Third-party owned</option><option>Government land</option><option>To be confirmed</option><option>N/A</option></select></div>
+                <div class="field col-4"><label for="landRights">Land Rights / Use Rights Available? <span class="required-mark">*</span></label><select id="landRights" name="landRights"><option value="">Select</option><option>Yes</option><option>No</option><option>To be confirmed</option><option>N/A</option></select></div>
+                <div class="field col-4"><label for="landDocs">Upload Land Documents</label><input id="landDocs" name="landDocs" type="file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" /></div>
+                <div class="field col-6"><label for="nearestGrid">Nearest Grid Connection / Substation <span class="required-mark">*</span></label><textarea id="nearestGrid" name="nearestGrid"></textarea></div>
+                <div class="field col-6"><label for="gridDistance">Approximate Distance to Grid Connection <span class="required-mark">*</span></label><input id="gridDistance" name="gridDistance" type="text" placeholder="Distance or N/A" /></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-card" id="section-2">
+          <div class="section-head">
+            <div class="section-title-wrap">
+              <div class="section-icon">⚡</div>
+              <div>
+                <h3>Section 2 · Energy & Load</h3>
+                <p>Capture electrical demand, load behavior, and energy information needed for system sizing and architecture decisions.</p>
+              </div>
+            </div>
+            <span class="pill">Sizing inputs</span>
+          </div>
+          <div class="section-body">
+            <div class="grid">
+              <div class="field col-4"><label for="bills12">Electricity Bills Available for 12 Months? <span class="required-mark">*</span></label><select id="bills12" name="bills12" required><option value="">Select</option><option>Yes</option><option>No</option><option>Partial</option><option>To be confirmed</option><option>Not available on site</option></select></div>
+              <div class="field col-4"><label for="bills12Upload">Upload 12 Months of Bills</label><input id="bills12Upload" name="bills12Upload" type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.xls,.xlsx,.csv" /></div>
+              <div class="field col-4"><label for="loadProfileAvailable">Interval / Load Profile Data Available? <span class="required-mark">*</span></label><select id="loadProfileAvailable" name="loadProfileAvailable" required><option value="">Select</option><option>Yes</option><option>No</option><option>To be confirmed</option><option>Not available on site</option></select></div>
+              <div class="field col-6"><label for="loadDataUpload">Upload Interval / Load Data</label><input id="loadDataUpload" name="loadDataUpload" type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.xls,.xlsx,.csv" /></div>
+              <div class="field col-6"><label for="mainLoads">Main Loads Identified <span class="required-mark">*</span></label><textarea id="mainLoads" name="mainLoads" required></textarea></div>
+              <div class="field col-6"><label for="criticalLoads">Critical Loads Identified <span class="required-mark">*</span></label><textarea id="criticalLoads" name="criticalLoads" required></textarea></div>
+              <div class="field col-6"><label for="essentialBackupLoads">Essential Backup Loads Identified <span class="required-mark">*</span></label><textarea id="essentialBackupLoads" name="essentialBackupLoads" required></textarea></div>
+              <div class="field col-4"><label for="dayNight">Day vs Night Load Behavior <span class="required-mark">*</span></label><textarea id="dayNight" name="dayNight" required></textarea></div>
+              <div class="field col-4"><label for="weekdayWeekend">Weekday vs Weekend Variation <span class="required-mark">*</span></label><textarea id="weekdayWeekend" name="weekdayWeekend" required></textarea></div>
+              <div class="field col-4"><label for="peakDemandTimes">Peak Demand Times <span class="required-mark">*</span></label><textarea id="peakDemandTimes" name="peakDemandTimes" required></textarea></div>
+              <div class="field col-4"><label for="nightLoad">Minimum Night Load Estimate <span class="required-mark">*</span></label><input id="nightLoad" name="nightLoad" type="text" placeholder="Value and unit or N/A" required /></div>
+              <div class="field col-4"><label for="confidence">Load Profile Confidence <span class="required-mark">*</span></label><select id="confidence" name="confidence" required><option value="">Select</option><option>High</option><option>Medium</option><option>Low</option><option>Unknown</option></select></div>
+              <div class="field col-4"><label for="seasonalVariation">Seasonal Variation in Load <span class="required-mark">*</span></label><textarea id="seasonalVariation" name="seasonalVariation" required></textarea></div>
+              <div class="field col-6"><label for="powerQuality">Power Quality Issues Observed or Reported <span class="required-mark">*</span></label><textarea id="powerQuality" name="powerQuality" required></textarea></div>
+              <div class="field col-3"><label for="tariffKnown">Existing Tariff Structure Known? <span class="required-mark">*</span></label><select id="tariffKnown" name="tariffKnown" required><option value="">Select</option><option>Yes</option><option>No</option><option>To be confirmed</option><option>N/A</option></select></div>
+              <div class="field col-3"><label for="measurementsTaken">Assessor Measurements Taken? <span class="required-mark">*</span></label><select id="measurementsTaken" name="measurementsTaken" required><option value="">Select</option><option>Yes</option><option>No</option></select></div>
+              <div class="field col-6"><label for="tariffDetails">Tariff Details <span class="required-mark">*</span></label><textarea id="tariffDetails" name="tariffDetails" required></textarea></div>
+            </div>
+
+            <div class="subsection" id="measurementsBlockSection">
+              <h4>Repeating Measurements Block</h4>
+              <p>Add one card for each measurement taken on site.</p>
+              <div class="dynamic-list" id="measurementsList"></div>
+              <button type="button" class="btn btn-ghost" data-add-repeat="measurement">＋ Add measurement</button>
+            </div>
+
+            <div class="subsection sector-residential">
+              <h4>Additional Residential Fields</h4>
+              <div class="grid">
+                <div class="field col-3"><label for="avgSpend">Average Monthly Electricity Spend <span class="required-mark">*</span></label><input id="avgSpend" name="avgSpend" type="text" /></div>
+                <div class="field col-5"><label for="outageLoads">Appliances / Loads Required During Outage <span class="required-mark">*</span></label><textarea id="outageLoads" name="outageLoads"></textarea></div>
+                <div class="field col-4"><label for="backupScope">Geyser / Stove / Aircon Included in Backup Scope? <span class="required-mark">*</span></label><textarea id="backupScope" name="backupScope"></textarea></div>
+                <div class="field col-4"><label for="priority">Preferred Priority: Savings, Backup, or Both <span class="required-mark">*</span></label><select id="priority" name="priority"><option value="">Select</option><option>Savings</option><option>Backup</option><option>Both</option><option>To be confirmed</option></select></div>
+              </div>
+            </div>
+
+            <div class="subsection sector-commercial">
+              <h4>Additional Commercial Fields</h4>
+              <div class="grid">
+                <div class="field col-3"><label for="peakDemandValue">Peak Demand Value <span class="required-mark">*</span></label><input id="peakDemandValue" name="peakDemandValue" type="text" /></div>
+                <div class="field col-3"><label for="generatorIntegration">Generator Integration Required? <span class="required-mark">*</span></label><select id="generatorIntegration" name="generatorIntegration"><option value="">Select</option><option>Yes</option><option>No</option><option>To be confirmed</option><option>N/A</option></select></div>
+                <div class="field col-3"><label for="generatorStrategy">Generator Operating Strategy <span class="required-mark">*</span></label><textarea id="generatorStrategy" name="generatorStrategy"></textarea></div>
+                <div class="field col-3"><label for="criticalBusinessLoads">Most Critical Business Loads <span class="required-mark">*</span></label><textarea id="criticalBusinessLoads" name="criticalBusinessLoads"></textarea></div>
+              </div>
+            </div>
+
+            <div class="subsection sector-utility">
+              <h4>Additional Utility-Scale Fields</h4>
+              <div class="grid">
+                <div class="field col-3"><label for="projectCapacity">Intended Project Capacity <span class="required-mark">*</span></label><input id="projectCapacity" name="projectCapacity" type="text" placeholder="MW / MWh or N/A" /></div>
+                <div class="field col-3"><label for="deliveryModel">Intended Energy Delivery Model <span class="required-mark">*</span></label><select id="deliveryModel" name="deliveryModel"><option value="">Select</option><option>Self-consumption</option><option>Grid export</option><option>PPA</option><option>Wheeling</option><option>Hybrid</option><option>To be confirmed</option></select></div>
+                <div class="field col-3"><label for="offtakerKnown">Offtaker / Buyer Known? <span class="required-mark">*</span></label><select id="offtakerKnown" name="offtakerKnown"><option value="">Select</option><option>Yes</option><option>No</option><option>To be confirmed</option><option>N/A</option></select></div>
+                <div class="field col-3"><label for="gridExport">Grid Export Expected? <span class="required-mark">*</span></label><select id="gridExport" name="gridExport"><option value="">Select</option><option>Yes</option><option>No</option><option>To be confirmed</option></select></div>
+                <div class="field"><label for="offtakerDetails">Offtaker / Buyer Details <span class="required-mark">*</span></label><textarea id="offtakerDetails" name="offtakerDetails"></textarea></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-card" id="section-3">
+          <div class="section-head">
+            <div class="section-title-wrap">
+              <div class="section-icon">🛠</div>
+              <div>
+                <h3>Section 3 · Technical Site Information</h3>
+                <p>Capture physical, structural, environmental, electrical, monitoring, logistics, and BESS site conditions for project planning and design.</p>
+              </div>
+            </div>
+            <span class="pill">Detailed technical inputs</span>
+          </div>
+          <div class="section-body">
+            <div class="subsection" style="padding-top:0;border-top:none;margin-top:0;">
+              <h4>3.1 Site Summary and Feasibility</h4>
+              <div class="grid">
+                <div class="field col-6"><label for="siteSummary">Existing Site Description <span class="required-mark">*</span></label><textarea id="siteSummary" name="siteSummary" required></textarea></div>
+                <div class="field col-3"><label for="mountingApproach">Most Suitable Mounting Approach <span class="required-mark">*</span></label><select id="mountingApproach" name="mountingApproach" required><option value="">Select</option><option>Rooftop</option><option>Ground</option><option>Hybrid</option><option>To be confirmed</option></select></div>
+                <div class="field col-3"><label for="feasibility">Preliminary Feasibility <span class="required-mark">*</span></label><select id="feasibility" name="feasibility" required><option value="">Select</option><option>Feasible</option><option>Feasible with constraints</option><option>Requires clarification</option><option>Not feasible</option></select></div>
+              </div>
+            </div>
+
+            <div class="subsection rooftop-block">
+              <h4>3.2 Installation Area Assessment · Rooftop</h4>
+              <p>Use one card per roof area assessed.</p>
+              <div class="dynamic-list" id="roofList"></div>
+              <button type="button" class="btn btn-ghost" data-add-repeat="roof">＋ Add roof area</button>
+            </div>
+
+            <div class="subsection ground-block sector-commercial sector-utility">
+              <h4>3.3 Installation Area Assessment · Ground / Land</h4>
+              <p>Use one card per ground area assessed.</p>
+              <div class="dynamic-list" id="groundList"></div>
+              <button type="button" class="btn btn-ghost" data-add-repeat="ground">＋ Add ground area</button>
+            </div>
+
+            <div class="subsection">
+              <h4>3.4 Structural Assessment</h4>
+              <div class="grid">
+                <div class="field col-4"><label for="structuralDrawings">Structural Drawings Available? <span class="required-mark">*</span></label><select id="structuralDrawings" name="structuralDrawings" required><option value="">Select</option><option>Yes</option><option>No</option><option>To be confirmed</option><option>Not available on site</option></select></div>
+                <div class="field col-4"><label for="needStructuralVerification">Need for Structural Verification <span class="required-mark">*</span></label><select id="needStructuralVerification" name="needStructuralVerification" required><option value="">Select</option><option>Yes</option><option>No</option><option>Urgent</option><option>To be confirmed</option></select></div>
+                <div class="field col-4"><label for="suitableWithoutReinforcement">Suitability Without Reinforcement <span class="required-mark">*</span></label><select id="suitableWithoutReinforcement" name="suitableWithoutReinforcement" required><option value="">Select</option><option>Appears adequate</option><option>Uncertain</option><option>Likely inadequate</option><option>N/A</option></select></div>
+                <div class="field col-6"><label for="loadingLimits">Known Roof / Surface Loading Limits <span class="required-mark">*</span></label><textarea id="loadingLimits" name="loadingLimits" required></textarea></div>
+                <div class="field col-6"><label for="previousInstalls">Previous Rooftop / Ground Installations <span class="required-mark">*</span></label><textarea id="previousInstalls" name="previousInstalls" required></textarea></div>
+                <div class="field col-4"><label for="visibleCorrosion">Visible Corrosion / Cracking / Deformation <span class="required-mark">*</span></label><textarea id="visibleCorrosion" name="visibleCorrosion" required></textarea></div>
+                <div class="field col-4"><label for="mainStructuralElements">Condition of Main Structural Elements <span class="required-mark">*</span></label><textarea id="mainStructuralElements" name="mainStructuralElements" required></textarea></div>
+                <div class="field col-4"><label for="structuralObservations">Structural Observations and Recommended Next Step <span class="required-mark">*</span></label><textarea id="structuralObservations" name="structuralObservations" required></textarea></div>
+              </div>
+            </div>
+
+            <div class="subsection">
+              <h4>3.5 Shading and Solar Access</h4>
+              <p>Add one card per area assessed for shading.</p>
+              <div class="dynamic-list" id="shadingList"></div>
+              <button type="button" class="btn btn-ghost" data-add-repeat="shade">＋ Add shading area</button>
+              <div class="grid" style="margin-top:16px;">
+                <div class="field col-3"><label for="bestAreas">Best-Performing Areas <span class="required-mark">*</span></label><textarea id="bestAreas" name="bestAreas" required></textarea></div>
+                <div class="field col-3"><label for="excludeAreas">Areas to Exclude <span class="required-mark">*</span></label><textarea id="excludeAreas" name="excludeAreas" required></textarea></div>
+                <div class="field col-3"><label for="setbacks">Required Setbacks <span class="required-mark">*</span></label><textarea id="setbacks" name="setbacks" required></textarea></div>
+                <div class="field col-3"><label for="yieldImpact">Likely Energy Yield Impact <span class="required-mark">*</span></label><textarea id="yieldImpact" name="yieldImpact" required></textarea></div>
+              </div>
+            </div>
+
+            <div class="subsection">
+              <h4>3.6 Environmental and Site Conditions</h4>
+              <div class="grid" id="environmentGrid"></div>
+            </div>
+
+            <div class="subsection">
+              <h4>3.7 Electrical Infrastructure Assessment</h4>
+              <div class="grid">
+                <div class="field col-6"><label for="dbLocation">Main Distribution Board Location <span class="required-mark">*</span></label><textarea id="dbLocation" name="dbLocation" required></textarea></div>
+                <div class="field col-6"><label for="boardType">Board Manufacturer / Type <span class="required-mark">*</span></label><textarea id="boardType" name="boardType" required></textarea></div>
+                <div class="field col-4"><label for="boardCondition">Board Condition <span class="required-mark">*</span></label><select id="boardCondition" name="boardCondition" required><option value="">Select</option><option>Excellent</option><option>Good</option><option>Fair</option><option>Poor</option><option>N/A</option></select></div>
+                <div class="field col-4"><label for="spareWays">Spare Ways / Breakers Available <span class="required-mark">*</span></label><textarea id="spareWays" name="spareWays" required></textarea></div>
+                <div class="field col-4"><label for="switchgearSpace">Space for New Switchgear <span class="required-mark">*</span></label><textarea id="switchgearSpace" name="switchgearSpace" required></textarea></div>
+                <div class="field col-4 sector-commercial sector-utility"><label for="busbarRating">Busbar Rating <span class="required-mark">*</span></label><input id="busbarRating" name="busbarRating" type="text" /></div>
+                <div class="field col-4"><label for="earthing">Earthing Arrangement <span class="required-mark">*</span></label><textarea id="earthing" name="earthing" required></textarea></div>
+                <div class="field col-4 sector-commercial sector-utility"><label for="scadaPossible">SCADA / BMS Integration Possible <span class="required-mark">*</span></label><select id="scadaPossible" name="scadaPossible"><option value="">Select</option><option>Yes</option><option>No</option><option>To be confirmed</option><option>N/A</option></select></div>
+              </div>
+            </div>
+
+            <div class="subsection">
+              <h4>3.8 PCC, Metering, and Controls</h4>
+              <div class="grid">
+                <div class="field col-6"><label for="meterType">Meter Type / Model <span class="required-mark">*</span></label><textarea id="meterType" name="meterType" required></textarea></div>
+                <div class="field col-6"><label for="distancePccBess">Distance from PCC to Inverter / BESS Area <span class="required-mark">*</span></label><input id="distancePccBess" name="distancePccBess" type="text" placeholder="Distance or N/A" required /></div>
+
+                <div class="field col-4 sector-commercial sector-utility"><label for="pccLocation">Likely PCC Location <span class="required-mark">*</span></label><textarea id="pccLocation" name="pccLocation"></textarea></div>
+                <div class="field col-4 sector-commercial sector-utility"><label for="meterInstallAccess">Accessible for Metering Installation <span class="required-mark">*</span></label><select id="meterInstallAccess" name="meterInstallAccess"><option value="">Select</option><option>Yes</option><option>No</option><option>To be confirmed</option><option>N/A</option></select></div>
+                <div class="field col-4 sector-commercial sector-utility"><label for="importExportMetering">Existing Import / Export Metering Present <span class="required-mark">*</span></label><select id="importExportMetering" name="importExportMetering"><option value="">Select</option><option>Yes</option><option>No</option><option>Unknown</option><option>N/A</option></select></div>
+                <div class="field col-4 sector-commercial sector-utility"><label for="ctsVts">CTs / VTs Available <span class="required-mark">*</span></label><select id="ctsVts" name="ctsVts"><option value="">Select</option><option>Yes</option><option>No</option><option>Unknown</option><option>N/A</option></select></div>
+                <div class="field col-4 sector-commercial sector-utility"><label for="reversePower">Existing Reverse Power Protection <span class="required-mark">*</span></label><select id="reversePower" name="reversePower"><option value="">Select</option><option>Yes</option><option>No</option><option>Unknown</option><option>N/A</option></select></div>
+                <div class="field col-4 sector-commercial sector-utility"><label for="antiIslanding">Anti-Islanding Protection Present <span class="required-mark">*</span></label><select id="antiIslanding" name="antiIslanding"><option value="">Select</option><option>Yes</option><option>No</option><option>Unknown</option><option>N/A</option></select></div>
+                <div class="field col-4 sector-commercial sector-utility"><label for="exportMeasurementPoint">Reliable Export-Measurement Point <span class="required-mark">*</span></label><textarea id="exportMeasurementPoint" name="exportMeasurementPoint"></textarea></div>
+                <div class="field col-4 sector-commercial sector-utility"><label for="commRoute">Communication Route from PCC Meter to Controller <span class="required-mark">*</span></label><select id="commRoute" name="commRoute"><option value="">Select</option><option>Ethernet</option><option>RS485</option><option>Fiber</option><option>Wireless</option><option>Other</option><option>N/A</option></select></div>
+                <div class="field col-4 sector-commercial sector-utility"><label for="distanceRoute">Distance and Route <span class="required-mark">*</span></label><textarea id="distanceRoute" name="distanceRoute"></textarea></div>
+                <div class="field col-4 sector-commercial sector-utility"><label for="interference">Communication Interference Risks <span class="required-mark">*</span></label><textarea id="interference" name="interference"></textarea></div>
+                <div class="field col-4 sector-commercial sector-utility"><label for="exportController">Dedicated Export Controller Required <span class="required-mark">*</span></label><select id="exportController" name="exportController"><option value="">Select</option><option>Yes</option><option>No</option><option>Likely</option><option>N/A</option></select></div>
+                <div class="field col-4 sector-commercial sector-utility"><label for="zeroExportNative">Native Inverter Zero-Export Likely Suitable <span class="required-mark">*</span></label><select id="zeroExportNative" name="zeroExportNative"><option value="">Select</option><option>Yes</option><option>No</option><option>To be confirmed</option><option>N/A</option></select></div>
+                <div class="field col-4 sector-commercial sector-utility"><label for="needPlcEms">Need for Third-Party PLC / EMS <span class="required-mark">*</span></label><select id="needPlcEms" name="needPlcEms"><option value="">Select</option><option>Yes</option><option>No</option><option>To be confirmed</option><option>N/A</option></select></div>
+                <div class="field col-4 sector-commercial sector-utility"><label for="needAuditLogs">Need for Zero-Export Audit Logs <span class="required-mark">*</span></label><select id="needAuditLogs" name="needAuditLogs"><option value="">Select</option><option>Yes</option><option>No</option><option>To be confirmed</option><option>N/A</option></select></div>
+              </div>
+            </div>
+
+            <div class="subsection">
+              <h4>3.9 BESS-Specific Site Assessment</h4>
+              <div class="grid">
+                <div class="field col-6"><label for="bessLocation">Candidate BESS Location <span class="required-mark">*</span></label><textarea id="bessLocation" name="bessLocation" required></textarea></div>
+                <div class="field col-3"><label for="bessLocationType">Location Type <span class="required-mark">*</span></label><select id="bessLocationType" name="bessLocationType" required><option value="">Select</option><option>Outdoor yard</option><option>Indoor room</option><option>Container pad</option><option>Covered area</option><option>Wall-mounted</option><option>Garage</option><option>Utility room</option><option>Other</option><option>N/A</option></select></div>
+                <div class="field col-3"><label for="bessDimensions">Dimensions Available <span class="required-mark">*</span></label><input id="bessDimensions" name="bessDimensions" type="text" placeholder="Dimensions or N/A" required /></div>
+                <div class="field col-4"><label for="floorLoading">Ground / Floor Loading Condition <span class="required-mark">*</span></label><textarea id="floorLoading" name="floorLoading" required></textarea></div>
+                <div class="field col-4"><label for="ventilation">Ventilation Adequacy <span class="required-mark">*</span></label><textarea id="ventilation" name="ventilation" required></textarea></div>
+                <div class="field col-4"><label for="distanceMainBoard">Distance from PCC / Main Board <span class="required-mark">*</span></label><input id="distanceMainBoard" name="distanceMainBoard" type="text" placeholder="Distance or N/A" required /></div>
+                <div class="field col-4"><label for="fireSeparation">Fire Separation Available <span class="required-mark">*</span></label><select id="fireSeparation" name="fireSeparation" required><option value="">Select</option><option>Yes</option><option>No</option><option>To be confirmed</option><option>N/A</option></select></div>
+                <div class="field col-4"><label for="bessFloodRisk">Flood Risk <span class="required-mark">*</span></label><textarea id="bessFloodRisk" name="bessFloodRisk" required></textarea></div>
+                <div class="field col-4"><label for="craneAccess">Vehicle / Crane Access <span class="required-mark">*</span></label><textarea id="craneAccess" name="craneAccess" required></textarea></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-card" id="section-end">
+          <div class="section-head">
+            <div class="section-title-wrap">
+              <div class="section-icon">✅</div>
+              <div>
+                <h3>Final Actions</h3>
+                <p>Use the tools below to validate the form, save a draft, export a JSON record, or print to PDF.</p>
+              </div>
+            </div>
+            <span class="pill">Finish</span>
+          </div>
+          <div class="section-body">
+            <div class="summary-box">
+              This HTML form is designed to be opened directly in a browser. Draft data saves locally on the same device using browser storage. For a final readable report, use your browser’s Print function and choose <strong>Save as PDF</strong>.
+            </div>
+          </div>
+        </section>
+
+        <div class="sticky-actions">
+          <div class="status" id="statusText">Ready to capture site assessment data.</div>
+          <div class="action-row">
+            <button type="button" class="btn btn-secondary" id="prevSectionBtnBottom">← Previous</button>
+            <button type="button" class="btn btn-secondary" id="nextSectionBtnBottom">Next →</button>
+            <button type="button" class="btn btn-secondary" id="validateBtn">Check completion</button>
+            <button type="button" class="btn btn-secondary" id="printBtn">Print / Save PDF</button>
+            <button type="submit" class="btn btn-primary">Validate submission</button>
+          </div>
+        </div>
+      </form>
+    </main>
+  </div>
+
+  <template id="measurementTemplate">
+    <div class="repeat-card">
+      <div class="repeat-head"><strong>Measurement</strong><button type="button" class="btn btn-danger" data-remove-repeat>Remove</button></div>
+      <div class="grid">
+        <div class="field col-4"><label>Measurement Parameter <span class="required-mark">*</span></label><select data-name="parameter" required><option value="">Select</option><option>Voltage</option><option>Current</option><option>Frequency</option><option>Power</option><option>Demand</option><option>Temperature</option><option>Other</option></select></div>
+        <div class="field col-4"><label>Measured? <span class="required-mark">*</span></label><select data-name="measured" required><option value="">Select</option><option>Yes</option><option>No</option></select></div>
+        <div class="field col-4"><label>Measured Value <span class="required-mark">*</span></label><input type="text" data-name="value" placeholder="Value and unit or N/A" required /></div>
+        <div class="field col-4"><label>Time of Measurement <span class="required-mark">*</span></label><input type="text" data-name="time" placeholder="Time or N/A" required /></div>
+        <div class="field col-4"><label>Instrument Used <span class="required-mark">*</span></label><input type="text" data-name="instrument" placeholder="Instrument name or N/A" required /></div>
+        <div class="field col-4"><label>Measurement Notes <span class="required-mark">*</span></label><textarea data-name="notes" required></textarea></div>
+      </div>
     </div>
+  </template>
 
-    <div class="stepper">
-        <div class="step active" id="s1">
-            <div class="step-circle">1</div>
-            <span>CLIENT & SUPPLY</span>
-        </div>
-        <div class="step" id="s2">
-            <div class="step-circle">2</div>
-            <span>ENERGY & LOAD</span>
-        </div>
-        <div class="step" id="s3">
-            <div class="step-circle">3</div>
-            <span>TECHNICAL SITE</span>
-        </div>
+  <template id="roofTemplate">
+    <div class="repeat-card">
+      <div class="repeat-head"><strong>Roof Area</strong><button type="button" class="btn btn-danger" data-remove-repeat>Remove</button></div>
+      <div class="grid">
+        <div class="field col-4"><label>Roof Type <span class="required-mark">*</span></label><select data-name="roofType" required><option value="">Select</option><option>Metal sheet</option><option>Concrete</option><option>Tile</option><option>Composite</option><option>Other</option><option>N/A</option></select></div>
+        <div class="field col-4"><label>Roof Geometry <span class="required-mark">*</span></label><select data-name="roofGeometry" required><option value="">Select</option><option>Flat</option><option>Pitched</option><option>Curved</option><option>Multi-level</option><option>Other</option><option>N/A</option></select></div>
+        <div class="field col-4"><label>Estimated Usable Roof Area <span class="required-mark">*</span></label><input type="text" data-name="usableArea" placeholder="m² or N/A" required /></div>
+        <div class="field col-4"><label>Approximate Dimensions <span class="required-mark">*</span></label><input type="text" data-name="dimensions" placeholder="L x W or N/A" required /></div>
+        <div class="field col-4"><label>Orientation / Azimuth <span class="required-mark">*</span></label><input type="text" data-name="orientation" placeholder="Degrees / direction or N/A" required /></div>
+        <div class="field col-4"><label>Tilt / Pitch <span class="required-mark">*</span></label><input type="text" data-name="tilt" placeholder="Degrees or N/A" required /></div>
+        <div class="field col-4"><label>Roof Access Method <span class="required-mark">*</span></label><select data-name="accessMethod" required><option value="">Select</option><option>Stair</option><option>Ladder</option><option>Fixed access</option><option>MEWP</option><option>Other</option><option>N/A</option></select></div>
+        <div class="field col-4"><label>Roof Condition Observed <span class="required-mark">*</span></label><select data-name="condition" required><option value="">Select</option><option>Excellent</option><option>Good</option><option>Fair</option><option>Poor</option><option>N/A</option></select></div>
+        <div class="field col-4"><label>Photo References <span class="required-mark">*</span></label><select data-name="photos" required><option value="">Select</option><option>Cellphone images</option><option>Drone images</option><option>No images taken</option></select></div>
+        <div class="field col-6"><label>Visible Structural / Waterproofing Concerns <span class="required-mark">*</span></label><textarea data-name="concerns" required></textarea></div>
+        <div class="field col-6"><label>Obstructions Present <span class="required-mark">*</span></label><textarea data-name="obstructions" required></textarea></div>
+      </div>
     </div>
-    
+  </template>
 
-<form id="assessmentForm">
-        <div class="content-card">
-            
-            <div class="page active" id="p1">
-                <div class="section-header">
-                    <h2><i data-lucide="user-check"></i> Project & Client Info</h2>
-                    <p>Enter primary contact and site location details.</p>
-                </div>
-                
-                <div class="input-grid">
-                    <div>
-                        <label class="field-label">Lead Engineer</label>
-                        <input type="text" name="name" placeholder="Full Name">
-                    </div>
-                    <div>
-                        <label class="field-label">Assessment Date</label>
-                        <input type="date" name="assessment_date">
-                    </div>
-                    <div class="full-width">
-                        <label class="field-label">Client / Company Name</label>
-                        <input type="text" name="company" placeholder="Entity name as per utility bill">
-                    </div>
-                     <div class="full-width">
-                        <label class="field-label">Client / Company Email</label>
-                        <input type="email" name="email" placeholder="your@email.com">
-                    </div>
-                    <div class="full-width">
-                        <label class="field-label">Site Address</label>
-                        <input type="text" name="address" placeholder="Physical address for installation">
-                    </div>
-                </div>
+  <template id="groundTemplate">
+    <div class="repeat-card">
+      <div class="repeat-head"><strong>Ground Area</strong><button type="button" class="btn btn-danger" data-remove-repeat>Remove</button></div>
+      <div class="grid">
+        <div class="field col-4"><label>Area Name / Reference <span class="required-mark">*</span></label><input type="text" data-name="areaName" required /></div>
+        <div class="field col-4"><label>Estimated Usable Area <span class="required-mark">*</span></label><input type="text" data-name="usableArea" placeholder="m² / hectares / N/A" required /></div>
+        <div class="field col-4"><label>Surface Condition <span class="required-mark">*</span></label><select data-name="surfaceCondition" required><option value="">Select</option><option>Concrete</option><option>Gravel</option><option>Compacted soil</option><option>Paved</option><option>Mixed</option><option>Other</option><option>N/A</option></select></div>
+        <div class="field col-4"><label>Ground Slope <span class="required-mark">*</span></label><select data-name="groundSlope" required><option value="">Select</option><option>Flat</option><option>Slight</option><option>Moderate</option><option>Severe</option><option>N/A</option></select></div>
+        <div class="field col-4"><label>Drainage Condition <span class="required-mark">*</span></label><select data-name="drainage" required><option value="">Select</option><option>Good</option><option>Moderate</option><option>Poor</option><option>N/A</option></select></div>
+        <div class="field col-4"><label>Underground Services Likely Present <span class="required-mark">*</span></label><select data-name="undergroundServices" required><option value="">Select</option><option>Yes</option><option>No</option><option>Unknown</option><option>N/A</option></select></div>
+        <div class="field col-4"><label>Geotechnical Verification Needed <span class="required-mark">*</span></label><select data-name="geotech" required><option value="">Select</option><option>Yes</option><option>No</option><option>To be confirmed</option></select></div>
+        <div class="field col-4"><label>Photo References <span class="required-mark">*</span></label><select data-name="photos" required><option value="">Select</option><option>Cellphone images</option><option>Drone images</option><option>No images taken</option></select></div>
+        <div class="field col-6"><label>Flooding Risk <span class="required-mark">*</span></label><textarea data-name="floodRisk" required></textarea></div>
+        <div class="field col-6"><label>Vehicle / Crane Access Limitations <span class="required-mark">*</span></label><textarea data-name="vehicleAccess" required></textarea></div>
+        <div class="field col-6"><label>Operational / Clearance Constraints <span class="required-mark">*</span></label><textarea data-name="clearanceConstraints" required></textarea></div>
+        <div class="field col-6"><label>Nearby Shading Sources <span class="required-mark">*</span></label><textarea data-name="shadingSources" required></textarea></div>
+      </div>
+    </div>
+  </template>
 
-                <div class="section-header">
-                    <h2><i data-lucide="zap"></i> Connection Details</h2>
-                    <p>Understanding the current utility environment.</p>
-                </div>
-                <div class="input-grid">
-                    <div>
-                        <label class="field-label">Supply Configuration</label>
-                        <select name="supply_config">
-                            <option>Single Phase</option>
-                            <option>Three Phase</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="field-label">Meter Type</label>
-                        <select name="meter_type">
-                            <option>Prepaid</option>
-                            <option>Postpaid</option>
-                            <option>Smart Meter</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
+  <template id="shadeTemplate">
+    <div class="repeat-card">
+      <div class="repeat-head"><strong>Shading Area</strong><button type="button" class="btn btn-danger" data-remove-repeat>Remove</button></div>
+      <div class="grid">
+        <div class="field col-3"><label>Time of Observation <span class="required-mark">*</span></label><input type="text" data-name="timeObservation" required /></div>
+        <div class="field col-3"><label>Hours Affected <span class="required-mark">*</span></label><input type="text" data-name="hoursAffected" placeholder="Hours / periods or N/A" required /></div>
+        <div class="field col-3"><label>Severity <span class="required-mark">*</span></label><select data-name="severity" required><option value="">Select</option><option>Low</option><option>Medium</option><option>High</option><option>Exclusion area</option><option>Unknown</option></select></div>
+        <div class="field col-3"><label>Seasonal Concern <span class="required-mark">*</span></label><textarea data-name="seasonalConcern" required></textarea></div>
+        <div class="field col-6"><label>Main Shade Sources <span class="required-mark">*</span></label><textarea data-name="shadeSources" required></textarea></div>
+        <div class="field col-6"><label>Notes <span class="required-mark">*</span></label><textarea data-name="notes" required></textarea></div>
+      </div>
+    </div>
+  </template>
 
-            <div class="page" id="p2">
-                <div class="section-header">
-                    <h2><i data-lucide="bar-chart-3"></i> Consumption Profile</h2>
-                    <p>Historical energy data used for system sizing.</p>
-                </div>
-
-                <div class="input-grid">
-                    <div>
-                        <label class="field-label">Avg. Monthly kWh</label>
-                        <input type="number" name="avg_monthly_kwh" placeholder="0.00">
-                    </div>
-                    <div>
-                        <label class="field-label">Avg. Monthly Spend ($)</label>
-                        <input type="number" name="avg_monthly_spend" placeholder="0.00">
-                    </div>
-                    <div class="full-width">
-                        <label class="field-label">Primary Objective</label>
-                        <div class="option-grid">
-                            <label class="option-card"><input type="radio" name="primary_objective"> Bill Savings</label>
-                            <label class="option-card"><input type="radio" name="primary_objective"> Backup Power</label>
-                            <label class="option-card"><input type="radio" name="primary_objective"> Full Off-Grid</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="section-header">
-                    <h2><i data-lucide="activity"></i> High-Surge Loads</h2>
-                    <p>Identify equipment requiring high starting currents.</p>
-                </div>
-                <div class="option-grid">
-                    <label class="option-card"><input type="checkbox" name="borehole"> Borehole Pump</label>
-                    <label class="option-card"><input type="checkbox" name="air_conditioning"> Air Conditioning</label>
-                    <label class="option-card"><input type="checkbox" name="cold_storage"> Cold Storage</label>
-                    <label class="option-card"><input type="checkbox" name="heat_element"> Heat Element</label>
-                    <label class="option-card"><input type="checkbox" name="workshop_gear"> Workshop Gear</label>
-                </div>
-            </div>
-
-            <div class="page" id="p3">
-                <div class="section-header">
-                    <h2><i data-lucide="factory"></i> Infrastructure & Roof</h2>
-                    <p>Physical constraints and installation planning.</p>
-                </div>
-
-                <div class="input-grid">
-                    <div>
-                        <label class="field-label">Roof Material</label>
-                        <select name="roof_material">
-                            <option>IBR / Metal</option>
-                            <option>Tile</option>
-                            <option>Concrete Flat</option>
-                            <option>Ground Mount</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="field-label">Orientation</label>
-                        <select name="orientation">
-                            <option>North</option>
-                            <option>East / West</option>
-                            <option>South</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="field-label">Main Breaker (Amps)</label>
-                        <input type="text" name="main_breaker" placeholder="e.g. 60A">
-                    </div>
-                    <div>
-                        <label class="field-label">Cable Distance (m)</label>
-                        <input type="number" name="cable_distance" placeholder="PV to Inverter">
-                    </div>
-                </div>
-
-                <div class="section-header">
-                    <h2><i data-lucide="camera"></i> Photo Checklist</h2>
-                    <p>Standardized evidence required for design sign-off.</p>
-                </div>
-                <div class="option-grid">
-                    <label class="option-card"><input type="checkbox" name="main_db_open"> Main DB Open</label>
-                    <label class="option-card"><input type="checkbox" name="roof_conditions"> Roof Conditions</label>
-                    <label class="option-card"><input type="checkbox" name="utility_meter"> Utility Meter</label>
-                    <label class="option-card"><input type="checkbox" name="placement_area"> Placement Area</label>
-                </div>
-                
-                <div style="margin-top: 30px;">
-                    <label class="field-label">Special Engineering Notes</label>
-                    <textarea rows="4" name="message" placeholder="Note any shading risks or structural concerns..."></textarea>
-                </div>
-            </div>
-
-            <div class="footer-nav">
-                <button type="button" class="btn btn-secondary hidden" id="prevBtn" onclick="movePage(-1)">
-                    <i data-lucide="chevron-left"></i> Previous
-                </button>
-                <button type="button" class="btn btn-primary" id="nextBtn" onclick="movePage(1)">
-                    Next Step <i data-lucide="chevron-right"></i>
-                </button>
-            </div>
-        </div>
-</form>
-
-
-    
-</div>
-
-<script src="script.js"></script>
-
-<!-- Start of HubSpot Embed Code -->
-<script type="text/javascript" id="hs-script-loader" async defer src="//js.hs-scripts.com/8605810.js"></script>
-<!-- End of HubSpot Embed Code -->
-
+  <script src="script.js"></script>
 </body>
 </html>
