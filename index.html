@@ -4,7 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Master Site Assessment Form</title>
-<link rel="stylesheet" href="style.css">
+  <script>
+    // GitHub Pages project URLs sometimes load without trailing slash,
+    // which can break relative CSS/JS paths in some navigation cases.
+    (function () {
+      const isGitHubPages = window.location.hostname.endsWith('github.io');
+      const path = window.location.pathname;
+      const looksLikeDirectory = !path.endsWith('/') && !path.includes('.');
+      if (isGitHubPages && looksLikeDirectory) {
+        window.location.replace(path + '/' + window.location.search + window.location.hash);
+      }
+    })();
+  </script>
+<link rel="stylesheet" href="./style.css">
 </head>
 <body>
   <div class="shell">
@@ -510,6 +522,6 @@
     </div>
   </template>
 
-  <script src="script.js"></script>
+  <script src="./script.js"></script>
 </body>
 </html>
