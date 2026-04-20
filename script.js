@@ -52,6 +52,9 @@
       ground: { list: document.getElementById('groundList'), template: 'groundTemplate' },
       shade: { list: document.getElementById('shadingList'), template: 'shadeTemplate' }
     };
+    document.querySelectorAll('input[name="electricitySource"]').forEach((field) => {
+      field.required = false;
+    });
 
     function generateRef() {
       const d = new Date();
@@ -171,6 +174,7 @@
       }
 
       fields.forEach(field => {
+        if (field.type === 'checkbox') return;
         if (field.type === 'file') return;
         if (!field.checkValidity() || !String(field.value).trim()) {
           valid = false;
@@ -249,6 +253,9 @@
       }
 
       fields.forEach(field => {
+        if (field.type === 'checkbox') {
+          return;
+        }
         if (field.type === 'file') {
           return;
         }
