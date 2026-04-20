@@ -266,12 +266,12 @@
       });
 
       if (!valid && showMessage) {
-        statusText.textContent = 'Please complete all visible required fields before submitting.';
+        statusText.textContent = 'Please complete all required fields across all steps, then submit to the Laravel endpoint.';
         statusText.style.color = 'var(--danger)';
         firstInvalid?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         firstInvalid?.focus();
       } else if (valid && showMessage) {
-        statusText.textContent = 'All visible required fields are complete.';
+        statusText.textContent = 'All required steps are complete. You can now submit to the Laravel endpoint.';
         statusText.style.color = 'var(--success)';
       }
       updateProgress();
@@ -369,7 +369,7 @@
 
     async function submitToLaravel() {
       if (!submitEndpoint) {
-        statusText.textContent = 'Submission endpoint is not configured. Set data-submit-endpoint on the form tag.';
+        statusText.textContent = 'Submission endpoint is not configured. Set data-submit-endpoint on the form before submitting.';
         statusText.style.color = 'var(--danger)';
         return false;
       }
@@ -377,7 +377,7 @@
       const previousLabel = submitButton.textContent;
       submitButton.disabled = true;
       submitButton.textContent = 'Submitting...';
-      statusText.textContent = 'Submitting form data to backend...';
+      statusText.textContent = 'Submitting form data to Laravel endpoint...';
       statusText.style.color = 'var(--text)';
 
       try {

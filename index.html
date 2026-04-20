@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Master Site Assessment Form</title>
-  <link rel="stylesheet" href="favicon.ico">
+  <link rel="icon" href="img/icon.png" type="image/x-icon">
   <script>
     // GitHub Pages project URLs sometimes load without trailing slash,
     // which can break relative CSS/JS paths in some navigation cases.
@@ -430,7 +430,7 @@
               <div class="section-icon">✅</div>
               <div>
                 <h3>Final Actions</h3>
-                <p>Use the tools below to validate the form, save a draft, export a JSON record, or print to PDF.</p>
+                <p>Complete all required steps, confirm completion, then submit this assessment to your Laravel endpoint.</p>
               </div>
             </div>
             <span class="pill">Finish</span>
@@ -440,8 +440,13 @@
               This HTML form is designed to be opened directly in a browser. Draft data saves locally on the same device using browser storage. For a final readable report, use your browser’s Print function and choose <strong>Save as PDF</strong>.
             </div>
             <p class="hint" style="margin-top:12px;">
-              Backend submission is enabled. Set your Laravel API URL in the form tag:
-              <code>data-submit-endpoint="http://127.0.0.1:8000/api/site-assessments"</code>.
+              Final submission works in this order: (1) complete all required fields in all sections, (2) click
+              <strong>Check completion</strong>, then (3) click
+              <strong>Submit to Laravel endpoint</strong>.
+            </p>
+            <p class="hint">
+              Set your backend URL on the form tag, for example:
+              <code>data-submit-endpoint="https://api.your-domain.com/api/site-assessments"</code>.
             </p>
           </div>
         </section>
@@ -453,7 +458,7 @@
             <button type="button" class="btn btn-secondary" id="nextSectionBtnBottom">Next →</button>
             <button type="button" class="btn btn-secondary" id="validateBtn">Check completion</button>
             <button type="button" class="btn btn-secondary" id="printBtn">Print / Save PDF</button>
-            <button type="submit" class="btn btn-primary">Validate submission</button>
+            <button type="submit" class="btn btn-primary">Submit to Laravel endpoint</button>
           </div>
         </div>
       </form>
