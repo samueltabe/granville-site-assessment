@@ -309,6 +309,10 @@
       }
       const data = JSON.parse(raw);
       if (data.assessmentType) assessmentType.value = data.assessmentType;
+      if (data.bills12_available === undefined && data.bills12 !== undefined && typeof data.bills12 === 'string') {
+        const bills12Avail = document.getElementById('bills12_available');
+        if (bills12Avail) bills12Avail.value = data.bills12;
+      }
       updateVisibility();
       [...form.querySelectorAll('input, select, textarea')].forEach(field => {
         if (field.type === 'file' || field.type === 'checkbox' || !field.name) return;
