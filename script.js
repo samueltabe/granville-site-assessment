@@ -317,9 +317,9 @@
       }
       const data = JSON.parse(raw);
       if (data.assessmentType) assessmentType.value = data.assessmentType;
-      if (data.bills12_available === undefined && data.bills12 !== undefined && typeof data.bills12 === 'string') {
-        const bills12Avail = document.getElementById('bills12_available');
-        if (bills12Avail) bills12Avail.value = data.bills12;
+      if (data.bills12 === undefined && data.bills12_available !== undefined && typeof data.bills12_available === 'string') {
+        const bills12Field = document.getElementById('bills12');
+        if (bills12Field) bills12Field.value = data.bills12_available;
       }
       updateVisibility();
       [...form.querySelectorAll('input, select, textarea')].forEach(field => {
