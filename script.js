@@ -268,8 +268,16 @@
       if (!valid && showMessage) {
         statusText.textContent = 'Please complete all required fields across all steps, then submit to the Laravel endpoint.';
         statusText.style.color = 'var(--danger)';
-        firstInvalid?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        firstInvalid?.focus();
+        if (firstInvalid) {
+          const targetSectionIndex = sections.findIndex(section => section.contains(firstInvalid));
+          if (targetSectionIndex >= 0 && targetSectionIndex !== currentSectionIndex) {
+            goToSection(targetSectionIndex, { silent: true });
+          }
+          setTimeout(() => {
+            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            firstInvalid.focus();
+          }, 30);
+        }
       } else if (valid && showMessage) {
         statusText.textContent = 'All required steps are complete. You can now submit to the Laravel endpoint.';
         statusText.style.color = 'var(--success)';
