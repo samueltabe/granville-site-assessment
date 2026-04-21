@@ -317,10 +317,12 @@
       return data;
     }
 
-    function saveDraft() {
+    function saveDraft(silent = false) {
       localStorage.setItem(storageKey, JSON.stringify(gatherData()));
-      statusText.textContent = 'Draft saved to this browser.';
-      statusText.style.color = 'var(--success)';
+      if (!silent) {
+        statusText.textContent = 'Draft saved to this browser.';
+        statusText.style.color = 'var(--success)';
+      }
     }
 
     function loadDraft() {
@@ -456,9 +458,9 @@
           throw new Error(errorMessage);
         }
 
-        statusText.textContent = responseData?.message || 'Submission successful. Data was sent to Laravel backend.';
+        statusText.textContent = 'Data sent successfully.';
         statusText.style.color = 'var(--success)';
-        saveDraft();
+        saveDraft(true);
         return true;
       } catch (error) {
         statusText.textContent = error.message || 'Submission failed. Check backend URL, CORS, and Laravel logs.';
