@@ -14,6 +14,8 @@
     const nextButtons = [document.getElementById('nextSectionBtn'), document.getElementById('nextSectionBtnBottom')];
     const submitButton = form.querySelector('button[type="submit"]');
     let currentSectionIndex = 0;
+    let isInitializingWizard = true;
+    let autoAdvanceLock = false;
 
     const environmentFields = [
       'Salt Mist / Saline Atmosphere', 'High Humidity', 'Dust', 'Heavy Rain', 'Standing Water',
@@ -220,6 +222,19 @@
 
     function goPrevSection() {
       goToSection(currentSectionIndex - 1);
+    }
+
+    function maybeAutoAdvanceSection() {
+      if (isInitializingWizard || autoAdvanceLock) return;
+      const isFinalSection = currentSectionIndex >= sections.length - 1;
+      if (isFinalSection) return;
+      if (!validateSection(currentSectionIndex, false)) return;
+
+      autoAdvanceLock = true;
+      goToSection(currentSectionIndex + 1);
+      statusText.textContent = 'Section complete. Moved to the next section.';
+      statusText.style.color = 'var(--success)';
+      setTimeout(() => { autoAdvanceLock = false; }, 160);
     }
 
     function updateProgress() {
@@ -467,8 +482,14 @@
       }
     });
 
-    form.addEventListener('input', updateProgress);
-    form.addEventListener('change', updateProgress);
+    form.addEventListener('input', () => {
+      updateProgress();
+      maybeAutoAdvanceSection();
+    });
+    form.addEventListener('change', () => {
+      updateProgress();
+      maybeAutoAdvanceSection();
+    });
     form.addEventListener('change', (e) => {
       if (e.target === assessmentType || e.target.id === 'measurementsTaken') updateVisibility();
     });
@@ -480,11 +501,17 @@
       }
     });
 
-    document.getElementById('saveDraftBtn').addEventListener('click', saveDraft);
-    document.getElementById('loadDraftBtn').addEventListener('click', loadDraft);
-    document.getElementById('exportJsonBtn').addEventListener('click', exportJson);
-    document.getElementById('printBtn').addEventListener('click', () => window.print());
-    document.getElementById('validateBtn').addEventListener('click', () => validateForm(true));
+    const saveDraftBtn = document.getElementById('saveDraftBtn');
+    const loadDraftBtn = document.getElementById('loadDraftBtn');
+    const exportJsonBtn = document.getElementById('exportJsonBtn');
+    const printBtn = document.getElementById('printBtn');
+    const validateBtn = document.getElementById('validateBtn');
+
+    if (saveDraftBtn) saveDraftBtn.addEventListener('click', saveDraft);
+    if (loadDraftBtn) loadDraftBtn.addEventListener('click', loadDraft);
+    if (exportJsonBtn) exportJsonBtn.addEventListener('click', exportJson);
+    if (printBtn) printBtn.addEventListener('click', () => window.print());
+    if (validateBtn) validateBtn.addEventListener('click', () => validateForm(true));
     prevButtons.forEach(btn => btn.addEventListener('click', goPrevSection));
     nextButtons.forEach(btn => btn.addEventListener('click', goNextSection));
     navLinks.forEach((link, index) => {
@@ -506,4 +533,5 @@
     updateVisibility();
     goToSection(0, { silent: true });
     updateProgress();
+    isInitializingWizard = false;
   
