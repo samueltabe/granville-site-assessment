@@ -281,7 +281,7 @@
       });
 
       if (!valid && showMessage) {
-        statusText.textContent = 'Please complete all required fields across all steps, then submit to the Laravel endpoint.';
+        statusText.textContent = 'Please complete all required fields across all steps, then submit.';
         statusText.style.color = 'var(--danger)';
         if (firstInvalid) {
           const targetSectionIndex = sections.findIndex(section => section.contains(firstInvalid));
@@ -294,7 +294,7 @@
           }, 30);
         }
       } else if (valid && showMessage) {
-        statusText.textContent = 'All required steps are complete. You can now submit to the Laravel endpoint.';
+        statusText.textContent = 'All required steps are complete. You can now submit.';
         statusText.style.color = 'var(--success)';
       }
       updateProgress();
@@ -429,7 +429,7 @@
       const previousLabel = submitButton.textContent;
       submitButton.disabled = true;
       submitButton.textContent = 'Submitting...';
-      statusText.textContent = 'Submitting form data to Laravel endpoint...';
+      statusText.textContent = 'Submitting form data...';
       statusText.style.color = 'var(--text)';
 
       try {
