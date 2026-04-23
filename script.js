@@ -91,27 +91,85 @@ function fieldVisible(el) {
   return el.offsetParent !== null || el.closest('.conditional-block.show');
 }
 
-function sectionIsComplete(section) {
-  if (!section) return false;
-  const fields = [...section.querySelectorAll('input, select, textarea')].filter(fieldVisible);
-  if (!fields.length) return false;
+function isFieldRequired(field) {
+  if (!field) return false;
+  if (field.required) return true;
+  const fieldWrapper = field.closest('.field');
+  const label = fieldWrapper?.querySelector('label');
+  return Boolean(label?.querySelector('.req'));
+}
 
-  const checkboxGroups = new Map();
-  for (const field of fields) {
-    if (field.type === 'checkbox') {
-      if (!checkboxGroups.has(field.name)) checkboxGroups.set(field.name, []);
-      checkboxGroups.get(field.name).push(field);
+function getValidationLabel(field) {
+  const txt = getFieldLabelText(field);
+  if (txt) return txt;
+  if (field.name) return field.name.replace(/\[\]$/, '').replace(/_/g, ' ');
+  return 'This field';
+}
+
+function findSectionValidationError(section) {
+  if (!section) return null;
+  const fields = [...section.querySelectorAll('input, select, textarea')].filter(fieldVisible);
+  if (!fields.length) return null;
+
+  const requiredFields = fields.filter(isFieldRequired);
+  if (!requiredFields.length) return null;
+
+  const checkedGroups = new Set();
+
+  for (const field of requiredFields) {
+    if (field.readOnly || field.disabled) continue;
+
+    if (field.type === 'checkbox' || field.type === 'radio') {
+      const groupName = field.name || field.id;
+      if (!groupName || checkedGroups.has(groupName)) continue;
+      checkedGroups.add(groupName);
+      const group = requiredFields.filter((f) => (f.type === field.type) && (f.name || f.id) === groupName);
+      if (!group.some((f) => f.checked)) {
+        return {
+          field,
+          label: getValidationLabel(field),
+          message: `Please select at least one option for "${getValidationLabel(field)}".`
+        };
+      }
+      continue;
+    }
+
+    if (field.type === 'file') {
+      if (!field.files || field.files.length === 0) {
+        return {
+          field,
+          label: getValidationLabel(field),
+          message: `Please upload a file for "${getValidationLabel(field)}".`
+        };
+      }
+      continue;
+    }
+
+    if (!String(field.value || '').trim()) {
+      return {
+        field,
+        label: getValidationLabel(field),
+        message: `Please fill "${getValidationLabel(field)}".`
+      };
     }
   }
 
-  for (const field of fields) {
-    if (field.type === 'checkbox' || field.type === 'radio' || field.type === 'file' || field.readOnly) continue;
-    if (!String(field.value || '').trim()) return false;
-  }
-  for (const group of checkboxGroups.values()) {
-    if (group.length && !group.some((c) => c.checked)) return false;
-  }
-  return true;
+  return null;
+}
+
+function focusValidationError(error) {
+  if (!error?.field) return;
+  error.field.setAttribute('aria-invalid', 'true');
+  setTimeout(() => {
+    error.field.focus({ preventScroll: false });
+    if (typeof error.field.select === 'function' && (error.field.type === 'text' || error.field.tagName === 'TEXTAREA')) {
+      error.field.select();
+    }
+  }, 80);
+}
+
+function sectionIsComplete(section) {
+  return !findSectionValidationError(section);
 }
 
 function updateNavChecks() {
@@ -231,9 +289,12 @@ function buildSubmissionFormData() {
 
 async function submitForm() {
   for (let i = 0; i < totalSections; i++) {
-    if (!sectionIsComplete(document.getElementById(`sec${i}`))) {
+    const section = document.getElementById(`sec${i}`);
+    const error = findSectionValidationError(section);
+    if (error) {
       goTo(i);
-      showToast('Please complete all sections before submit');
+      showToast(error.message);
+      focusValidationError(error);
       return;
     }
   }
