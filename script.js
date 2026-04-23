@@ -1,539 +1,557 @@
+let currentSection = 0;
+const totalSections = 13;
+const draftKey = 'ge_draft';
+const endpointKey = 'ge_submit_endpoint';
+let measureCount = 0;
+let loadCount = 0;
+let roofCount = 0;
+let groundCount = 0;
+let shadingCount = 0;
+let extraPhotoCount = 0;
+let autoAdvanceLock = false;
 
-    const form = document.getElementById('siteAssessmentForm');
-    const assessmentType = document.getElementById('assessmentType');
-    const assessmentRef = document.getElementById('assessmentRef');
-    const statusText = document.getElementById('statusText');
-    const progressText = document.getElementById('progressText');
-    const progressFill = document.getElementById('progressFill');
-    const navLinks = [...document.querySelectorAll('.nav-link')];
-    const storageKey = 'masterSiteAssessmentDraft_v1';
-    const endpointStorageKey = 'masterSiteAssessmentSubmitEndpoint_v1';
-    const sections = [...document.querySelectorAll('form .section-card')];
-    const wizardStepTitle = document.getElementById('wizardStepTitle');
-    const prevButtons = [document.getElementById('prevSectionBtn'), document.getElementById('prevSectionBtnBottom')];
-    const nextButtons = [document.getElementById('nextSectionBtn'), document.getElementById('nextSectionBtnBottom')];
-    const submitButton = form.querySelector('button[type="submit"]');
-    let currentSectionIndex = 0;
-    let isInitializingWizard = true;
-    let autoAdvanceLock = false;
+function getForm() { return document.getElementById('siteAssessmentForm'); }
 
-    const environmentFields = [
-      'Salt Mist / Saline Atmosphere', 'High Humidity', 'Dust', 'Heavy Rain', 'Standing Water',
-      'Wind Exposure', 'Vibration', 'Corrosive Industrial Atmosphere', 'High Temperature', 'Lightning Exposure'
-    ];
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
 
-    const environmentGrid = document.getElementById('environmentGrid');
-    environmentFields.forEach((label, index) => {
-      const safe = 'env_' + index;
-      const wrapper = document.createElement('div');
-      wrapper.className = 'field col-3';
-      wrapper.innerHTML = `
-        <label for="${safe}">${label} <span class="required-mark">*</span></label>
-        <select id="${safe}" name="${safe}" required>
-          <option value="">Select</option>
-          <option>Yes</option>
-          <option>No</option>
-          <option>Unknown</option>
-        </select>`;
-      environmentGrid.appendChild(wrapper);
-    });
+function slugify(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
 
-    ['Recommended Mounting Material', 'Cable / Conduit Protection Needs', 'Enclosure IP Rating Considerations', 'BESS Environmental Protection Needs'].forEach((label, idx) => {
-      const safe = 'env_text_' + idx;
-      const wrapper = document.createElement('div');
-      wrapper.className = 'field col-3';
-      wrapper.innerHTML = `
-        <label for="${safe}">${label} <span class="required-mark">*</span></label>
-        <textarea id="${safe}" name="${safe}" required></textarea>`;
-      environmentGrid.appendChild(wrapper);
-    });
+function getFieldLabelText(el) {
+  const field = el.closest('.field');
+  const label = field?.querySelector('label');
+  if (!label) return '';
+  const cloned = label.cloneNode(true);
+  cloned.querySelectorAll('.req').forEach((req) => req.remove());
+  return cloned.textContent.replace(/\s+/g, ' ').trim();
+}
 
-    const repeatMaps = {
-      measurement: { list: document.getElementById('measurementsList'), template: 'measurementTemplate' },
-      roof: { list: document.getElementById('roofList'), template: 'roofTemplate' },
-      ground: { list: document.getElementById('groundList'), template: 'groundTemplate' },
-      shade: { list: document.getElementById('shadingList'), template: 'shadeTemplate' }
-    };
-    document.querySelectorAll('input[name="electricitySource"]').forEach((field) => {
-      field.required = false;
-    });
+function ensureFieldIdentifiers(scope = document) {
+  const root = scope === document ? getForm() || document : scope;
+  const sections = root.querySelectorAll('.form-section');
+  const targets = sections.length ? [...sections] : [root];
 
-    function generateRef() {
-      const d = new Date();
-      const y = d.getFullYear().toString().slice(-2);
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      const rand = Math.random().toString(36).slice(2, 7).toUpperCase();
-      assessmentRef.value = `SA-${y}${m}${day}-${rand}`;
-    }
+  targets.forEach((section, sectionIndex) => {
+    const sectionKey = section.id || `sec_${sectionIndex}`;
+    const seen = new Map();
+    const fields = section.querySelectorAll('input, select, textarea');
 
-    function addRepeat(type, data = {}) {
-      const { list, template } = repeatMaps[type];
-      const fragment = document.getElementById(template).content.cloneNode(true);
-      const card = fragment.querySelector('.repeat-card');
-      const index = list.children.length + 1;
-      card.dataset.repeatType = type;
-      card.querySelector('.repeat-head strong').textContent += ` ${index}`;
-      card.querySelectorAll('[data-name]').forEach((el) => {
-        const key = `${type}_${index}_${el.dataset.name}`;
-        el.name = key;
-        el.id = key;
-        if (data[key] !== undefined) el.value = data[key];
-      });
-      list.appendChild(fragment);
-      updateVisibility();
-      updateProgress();
-    }
+    fields.forEach((el, fieldIndex) => {
+      const labelKey = slugify(getFieldLabelText(el)) || `${el.tagName.toLowerCase()}_${fieldIndex + 1}`;
+      const countKey = `${sectionKey}__${labelKey}`;
+      const count = (seen.get(countKey) || 0) + 1;
+      seen.set(countKey, count);
+      const suffix = count > 1 ? `_${count}` : '';
+      const base = `${sectionKey}__${labelKey}${suffix}`;
 
-    function ensureMinimumRepeats() {
-      if (!document.getElementById('measurementsList').children.length) addRepeat('measurement');
-      if (!document.getElementById('roofList').children.length) addRepeat('roof');
-      if (!document.getElementById('shadingList').children.length) addRepeat('shade');
-      const type = assessmentType.value;
-      if ((type === 'Commercial' || type === 'Utility-Scale') && !document.getElementById('groundList').children.length) addRepeat('ground');
-      if (type === 'Residential') document.getElementById('groundList').innerHTML = '';
-    }
+      if (el.type === 'checkbox' || el.type === 'radio') {
+        const group = el.closest('.check-group');
+        const groupLabel = slugify(group?.parentElement?.querySelector('label')?.textContent || getFieldLabelText(el)) || labelKey;
+        const groupName = `${sectionKey}__${groupLabel}[]`;
+        if (!el.name) el.name = groupName;
 
-    function setSectorRequirement(selector, active) {
-      document.querySelectorAll(selector).forEach((block) => {
-        block.classList.toggle('hidden', !active);
-        block.querySelectorAll('input, select, textarea').forEach((field) => {
-          const isFile = field.type === 'file';
-          if (active) {
-            if (field.closest('.field, .repeat-card')) {
-              field.dataset.wasSectorActive = 'true';
-            }
-            if (field.closest('.field') && field.previousElementSibling && field.previousElementSibling.innerText.includes('*') && !isFile) {
-              field.required = true;
-            }
-          } else {
-            field.required = false;
-            if (!isFile) field.value = '';
-          }
-        });
-      });
-    }
-
-    function updateVisibility() {
-      const type = assessmentType.value;
-      setSectorRequirement('.sector-residential', type === 'Residential');
-      setSectorRequirement('.sector-commercial', type === 'Commercial');
-      setSectorRequirement('.sector-utility', type === 'Utility-Scale');
-
-      document.querySelectorAll('.rooftop-block').forEach(el => {
-        const show = type === 'Residential' || type === 'Commercial';
-        el.classList.toggle('hidden', !show);
-        el.querySelectorAll('input, select, textarea').forEach(f => f.required = show);
-      });
-
-      document.querySelectorAll('.ground-block').forEach(el => {
-        const show = type === 'Commercial' || type === 'Utility-Scale';
-        el.classList.toggle('hidden', !show);
-        el.querySelectorAll('input, select, textarea').forEach(f => f.required = show);
-      });
-
-      document.getElementById('measurementsBlockSection').classList.toggle('hidden', document.getElementById('measurementsTaken').value === 'No');
-      document.querySelectorAll('#measurementsList input, #measurementsList select, #measurementsList textarea').forEach((f) => {
-        f.required = document.getElementById('measurementsTaken').value !== 'No';
-      });
-
-      ensureMinimumRepeats();
-      updateProgress();
-    }
-
-    function logicallyVisible(field) {
-      if (field.disabled || field.type === 'hidden') return false;
-      if (field.closest('.hidden')) return false;
-      return true;
-    }
-
-    function visibleField(field) {
-      return logicallyVisible(field);
-    }
-
-    function checkboxGroupSatisfied(name) {
-      return [...document.querySelectorAll(`input[name="${name}"]`)].some(cb => cb.checked);
-    }
-
-    function getVisibleRequiredFields() {
-      return [...form.querySelectorAll('input, select, textarea')].filter(field => visibleField(field) && field.required);
-    }
-
-    function getSectionRequiredFields(section) {
-      return [...section.querySelectorAll('input, select, textarea')].filter(field => logicallyVisible(field) && field.required);
-    }
-
-    function validateSection(index, showMessage = true) {
-      const section = sections[index];
-      if (!section) return true;
-      const fields = getSectionRequiredFields(section);
-      let firstInvalid = null;
-      let valid = true;
-
-      if (section.id === 'section-1' && !checkboxGroupSatisfied('electricitySource')) {
-        valid = false;
-        firstInvalid = firstInvalid || document.querySelector('input[name="electricitySource"]');
+        const pillText = slugify(el.parentElement?.textContent || '') || `option_${count}`;
+        if (!el.value || el.value === 'on') el.value = pillText;
+      } else if (!el.name) {
+        el.name = el.multiple || el.type === 'file' ? `${base}[]` : base;
       }
 
-      fields.forEach(field => {
-        if (field.type === 'checkbox') return;
-        if (field.type === 'file') return;
-        if (!field.checkValidity() || !String(field.value).trim()) {
-          valid = false;
-          if (!firstInvalid) firstInvalid = field;
-        }
-      });
-
-      if (!valid && showMessage) {
-        statusText.textContent = 'Please complete all required fields in this section before moving on.';
-        statusText.style.color = 'var(--danger)';
-        firstInvalid?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        firstInvalid?.focus();
-      }
-
-      updateProgress();
-      return valid;
-    }
-
-    function renderWizard() {
-      sections.forEach((section, index) => section.classList.toggle('wizard-hidden', index !== currentSectionIndex));
-      navLinks.forEach((link, index) => link.classList.toggle('active', index === currentSectionIndex));
-      const current = sections[currentSectionIndex];
-      wizardStepTitle.textContent = `Section ${currentSectionIndex + 1} of ${sections.length} · ${current.querySelector('h3')?.textContent || ''}`;
-      prevButtons.forEach(btn => btn.disabled = currentSectionIndex === 0);
-      nextButtons.forEach(btn => {
-        btn.disabled = currentSectionIndex === sections.length - 1;
-        btn.textContent = currentSectionIndex === sections.length - 2 ? 'Review final step →' : 'Next →';
-      });
-      current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    function goToSection(index, options = {}) {
-      const bounded = Math.max(0, Math.min(index, sections.length - 1));
-      currentSectionIndex = bounded;
-      renderWizard();
-      if (!options.silent) updateProgress();
-    }
-
-    function goNextSection() {
-      if (!validateSection(currentSectionIndex, true)) return;
-      goToSection(currentSectionIndex + 1);
-    }
-
-    function goPrevSection() {
-      goToSection(currentSectionIndex - 1);
-    }
-
-    function maybeAutoAdvanceSection() {
-      if (isInitializingWizard || autoAdvanceLock) return;
-      const isFinalSection = currentSectionIndex >= sections.length - 1;
-      if (isFinalSection) return;
-      if (!validateSection(currentSectionIndex, false)) return;
-
-      autoAdvanceLock = true;
-      goToSection(currentSectionIndex + 1);
-      statusText.textContent = 'Section complete. Moved to the next section.';
-      statusText.style.color = 'var(--success)';
-      setTimeout(() => { autoAdvanceLock = false; }, 160);
-    }
-
-    function updateProgress() {
-      const fields = getVisibleRequiredFields();
-      let complete = 0;
-      fields.forEach(field => {
-        if (field.type === 'checkbox') return;
-        if (field.type === 'file') {
-          if (field.files && field.files.length > 0) complete++;
-        } else if (field.value && String(field.value).trim() !== '') {
-          complete++;
-        }
-      });
-      const checkboxBonus = checkboxGroupSatisfied('electricitySource') ? 1 : 0;
-      const checkboxRequired = 1;
-      const total = fields.filter(f => f.type !== 'checkbox').length + checkboxRequired;
-      const done = complete + checkboxBonus;
-      const percent = total ? Math.round((done / total) * 100) : 0;
-      progressText.textContent = `${percent}%`;
-      progressFill.style.width = `${percent}%`;
-    }
-
-    function validateForm(showMessage = true) {
-      const fields = getVisibleRequiredFields();
-      let firstInvalid = null;
-      let valid = true;
-
-      if (!checkboxGroupSatisfied('electricitySource')) {
-        valid = false;
-        firstInvalid = firstInvalid || document.querySelector('input[name="electricitySource"]');
-      }
-
-      fields.forEach(field => {
-        if (field.type === 'checkbox') {
-          return;
-        }
-        if (field.type === 'file') {
-          return;
-        }
-        if (!field.checkValidity() || !String(field.value).trim()) {
-          valid = false;
-          if (!firstInvalid) firstInvalid = field;
-        }
-      });
-
-      if (!valid && showMessage) {
-        statusText.textContent = 'Please complete all required fields across all steps, then submit.';
-        statusText.style.color = 'var(--danger)';
-        if (firstInvalid) {
-          const targetSectionIndex = sections.findIndex(section => section.contains(firstInvalid));
-          if (targetSectionIndex >= 0 && targetSectionIndex !== currentSectionIndex) {
-            goToSection(targetSectionIndex, { silent: true });
-          }
-          setTimeout(() => {
-            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            firstInvalid.focus();
-          }, 30);
-        }
-      } else if (valid && showMessage) {
-        statusText.textContent = 'All required steps are complete. You can now submit.';
-        statusText.style.color = 'var(--success)';
-      }
-      updateProgress();
-      return valid;
-    }
-
-    function gatherData() {
-      const data = {};
-      const fd = new FormData(form);
-      for (const [key, value] of fd.entries()) {
-        if (value instanceof File && value.name === '') continue;
-        if (data[key]) {
-          if (!Array.isArray(data[key])) data[key] = [data[key]];
-          data[key].push(value instanceof File ? value.name : value);
+      if (!el.id) {
+        if (el.type === 'checkbox' || el.type === 'radio') {
+          const valueKey = slugify(el.value) || `choice_${count}`;
+          el.id = `${el.name.replace(/\[\]$/, '')}__${valueKey}`;
         } else {
-          data[key] = value instanceof File ? value.name : value;
+          el.id = base;
         }
       }
-      data.electricitySource = [...document.querySelectorAll('input[name="electricitySource"]:checked')].map(el => el.value);
-      return data;
+    });
+  });
+}
+
+function goTo(index) {
+  document.querySelectorAll('.form-section').forEach((s, i) => s.classList.toggle('active', i === index));
+  document.querySelectorAll('.nav-item').forEach((n, i) => n.classList.toggle('active', i === index));
+  currentSection = index;
+  updateProgress();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function fieldVisible(el) {
+  return el.offsetParent !== null || el.closest('.conditional-block.show');
+}
+
+function sectionIsComplete(section) {
+  if (!section) return false;
+  const fields = [...section.querySelectorAll('input, select, textarea')].filter(fieldVisible);
+  if (!fields.length) return false;
+
+  const checkboxGroups = new Map();
+  for (const field of fields) {
+    if (field.type === 'checkbox') {
+      if (!checkboxGroups.has(field.name)) checkboxGroups.set(field.name, []);
+      checkboxGroups.get(field.name).push(field);
     }
+  }
 
-    function saveDraft(silent = false) {
-      localStorage.setItem(storageKey, JSON.stringify(gatherData()));
-      if (!silent) {
-        statusText.textContent = 'Draft saved to this browser.';
-        statusText.style.color = 'var(--success)';
-      }
+  for (const field of fields) {
+    if (field.type === 'checkbox' || field.type === 'radio' || field.type === 'file' || field.readOnly) continue;
+    if (!String(field.value || '').trim()) return false;
+  }
+  for (const group of checkboxGroups.values()) {
+    if (group.length && !group.some((c) => c.checked)) return false;
+  }
+  return true;
+}
+
+function updateNavChecks() {
+  document.querySelectorAll('.form-section').forEach((section, i) => {
+    const nav = document.querySelectorAll('.nav-item')[i];
+    if (!nav) return;
+    const done = sectionIsComplete(section);
+    nav.classList.toggle('done', done);
+    const check = nav.querySelector('.nav-check');
+    if (check) check.textContent = done ? '✓' : '';
+  });
+}
+
+function updateProgress() {
+  const form = getForm();
+  if (!form) return;
+  const fields = [...form.querySelectorAll('input:not([type="file"]):not([readonly]), select, textarea')];
+  let filled = 0;
+  for (const field of fields) {
+    if (field.type === 'checkbox' || field.type === 'radio') {
+      if (field.checked) filled++;
+    } else if (String(field.value || '').trim()) {
+      filled++;
     }
+  }
+  const pct = fields.length ? Math.min(100, Math.round((filled / fields.length) * 100)) : 0;
+  const pctDisplay = document.getElementById('pctDisplay');
+  if (pctDisplay) pctDisplay.textContent = `${pct}%`;
+  updateNavChecks();
+}
 
-    function loadDraft() {
-      const raw = localStorage.getItem(storageKey);
-      if (!raw) {
-        statusText.textContent = 'No saved draft found in this browser.';
-        statusText.style.color = 'var(--danger)';
-        return;
-      }
-      const data = JSON.parse(raw);
-      if (data.assessmentType) assessmentType.value = data.assessmentType;
-      if (data.bills12 === undefined && data.bills12_available !== undefined && typeof data.bills12_available === 'string') {
-        const bills12Field = document.getElementById('bills12');
-        if (bills12Field) bills12Field.value = data.bills12_available;
-      }
-      updateVisibility();
-      [...form.querySelectorAll('input, select, textarea')].forEach(field => {
-        if (field.type === 'file' || field.type === 'checkbox' || !field.name) return;
-        if (data[field.name] !== undefined) field.value = data[field.name];
-      });
-      document.querySelectorAll('input[name="electricitySource"]').forEach(cb => {
-        cb.checked = Array.isArray(data.electricitySource) && data.electricitySource.includes(cb.value);
-      });
+function maybeAutoAdvance() {
+  if (autoAdvanceLock || currentSection >= totalSections - 1) return;
+  const section = document.getElementById(`sec${currentSection}`);
+  if (!sectionIsComplete(section)) return;
+  autoAdvanceLock = true;
+  goTo(currentSection + 1);
+  setTimeout(() => { autoAdvanceLock = false; }, 180);
+}
 
-      ['measurement', 'roof', 'ground', 'shade'].forEach(type => {
-        repeatMaps[type].list.innerHTML = '';
-        const groups = Object.keys(data).filter(key => key.startsWith(type + '_')).reduce((acc, key) => {
-          const parts = key.split('_');
-          const idx = parts[1];
-          acc[idx] = acc[idx] || {};
-          acc[idx][key] = data[key];
-          return acc;
-        }, {});
-        const entries = Object.values(groups);
-        if (entries.length) entries.forEach(item => addRepeat(type, item));
-      });
-
-      if (!document.getElementById('measurementsList').children.length) addRepeat('measurement');
-      if (!document.getElementById('roofList').children.length) addRepeat('roof');
-      if ((assessmentType.value === 'Commercial' || assessmentType.value === 'Utility-Scale') && !document.getElementById('groundList').children.length) addRepeat('ground');
-      if (!document.getElementById('shadingList').children.length) addRepeat('shade');
-
-      statusText.textContent = 'Draft loaded from this browser.';
-      statusText.style.color = 'var(--success)';
-      updateProgress();
+function collectDraftData() {
+  const form = getForm();
+  const data = {};
+  if (!form) return data;
+  const fields = [...form.querySelectorAll('input:not([type="file"]), select, textarea')];
+  for (const field of fields) {
+    if (!field.name) continue;
+    if (field.type === 'checkbox') {
+      if (!Array.isArray(data[field.name])) data[field.name] = [];
+      if (field.checked) data[field.name].push(field.value || 'on');
+      continue;
     }
-
-    function exportJson() {
-      const blob = new Blob([JSON.stringify(gatherData(), null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${assessmentRef.value || 'site-assessment'}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      statusText.textContent = 'JSON export downloaded.';
-      statusText.style.color = 'var(--success)';
+    if (field.type === 'radio') {
+      if (field.checked) data[field.name] = field.value;
+      continue;
     }
+    data[field.name] = field.value;
+  }
+  return data;
+}
 
-    function getCsrfToken() {
-      return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+function saveDraft() {
+  localStorage.setItem(draftKey, JSON.stringify(collectDraftData()));
+  showToast('Draft saved ✓');
+}
+
+function loadDraft() {
+  const raw = localStorage.getItem(draftKey);
+  if (!raw) return;
+  const data = JSON.parse(raw);
+  const form = getForm();
+  if (!form) return;
+  const fields = [...form.querySelectorAll('input:not([type="file"]), select, textarea')];
+  for (const field of fields) {
+    if (!field.name || data[field.name] === undefined) continue;
+    if (field.type === 'checkbox') {
+      field.checked = Array.isArray(data[field.name]) && data[field.name].includes(field.value || 'on');
+      field.parentElement?.classList.toggle('checked', field.checked);
+    } else if (field.type === 'radio') {
+      field.checked = data[field.name] === field.value;
+    } else {
+      field.value = data[field.name];
     }
+  }
+}
 
-    function resolveSubmitEndpoint() {
-      const fromDataset = (form.dataset.submitEndpoint || '').trim();
-      const fromStorage = (localStorage.getItem(endpointStorageKey) || '').trim();
-      const fromGlobal = (window.SITE_ASSESSMENT_API_URL || '').trim();
-      return fromDataset || fromStorage || fromGlobal || '';
+function generateRef() {
+  const now = new Date();
+  const code = now.getFullYear().toString().slice(-2) + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+  const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
+  const ref = document.getElementById('refId');
+  if (ref) ref.value = `GE-SAR-${code}-${rand}`;
+}
+
+function resolveSubmitEndpoint() {
+  const form = getForm();
+  if (!form) return '';
+  return (form.dataset.submitEndpoint || '').trim() || (localStorage.getItem(endpointKey) || '').trim();
+}
+
+function saveSubmitEndpoint(url) {
+  const clean = String(url || '').trim();
+  if (!clean) return;
+  const form = getForm();
+  if (form) form.dataset.submitEndpoint = clean;
+  localStorage.setItem(endpointKey, clean);
+}
+
+function buildSubmissionFormData() {
+  const form = getForm();
+  if (!form) return new FormData();
+  ensureFieldIdentifiers();
+  const payload = new FormData(form);
+  payload.append('submittedAt', new Date().toISOString());
+  return payload;
+}
+
+async function submitForm() {
+  for (let i = 0; i < totalSections; i++) {
+    if (!sectionIsComplete(document.getElementById(`sec${i}`))) {
+      goTo(i);
+      showToast('Please complete all sections before submit');
+      return;
     }
+  }
 
-    function saveSubmitEndpoint(url) {
-      const normalized = (url || '').trim();
-      if (!normalized) return;
-      form.dataset.submitEndpoint = normalized;
-      localStorage.setItem(endpointStorageKey, normalized);
+  let endpoint = resolveSubmitEndpoint();
+  if (!endpoint) {
+    const entered = window.prompt('Enter Laravel endpoint URL:', 'http://127.0.0.1:8000/api/site-assessments');
+    if (!entered || !entered.trim()) {
+      showToast('Submission cancelled');
+      return;
     }
+    saveSubmitEndpoint(entered);
+    endpoint = resolveSubmitEndpoint();
+  }
 
-    function buildSubmissionFormData() {
-      const payload = new FormData(form);
-      payload.delete('electricitySource');
-      [...document.querySelectorAll('input[name="electricitySource"]:checked')].forEach((field) => {
-        payload.append('electricitySource[]', field.value);
-      });
-      payload.append('submittedAt', new Date().toISOString());
-      return payload;
-    }
-
-    async function submitToLaravel() {
-      let endpoint = resolveSubmitEndpoint();
-      if (!endpoint) {
-        const enteredUrl = window.prompt(
-          'Enter your Laravel endpoint URL (example: https://api.your-domain.com/api/site-assessments):',
-          'https://api.your-domain.com/api/site-assessments'
-        );
-        if (!enteredUrl || !enteredUrl.trim()) {
-          statusText.textContent = 'Submission cancelled. No Laravel endpoint URL was provided.';
-          statusText.style.color = 'var(--danger)';
-          return false;
-        }
-        saveSubmitEndpoint(enteredUrl);
-        endpoint = resolveSubmitEndpoint();
-      }
-
-      const previousLabel = submitButton.textContent;
-      submitButton.disabled = true;
-      submitButton.textContent = 'Submitting...';
-      statusText.textContent = 'Submitting form data...';
-      statusText.style.color = 'var(--text)';
-
-      try {
-        const csrfToken = getCsrfToken();
-        const headers = { Accept: 'application/json' };
-        if (csrfToken) headers['X-CSRF-TOKEN'] = csrfToken;
-
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers,
-          body: buildSubmissionFormData()
-        });
-
-        let responseData = null;
-        const contentType = response.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-          responseData = await response.json();
-        } else {
-          const text = await response.text();
-          responseData = text ? { message: text } : null;
-        }
-
-        if (!response.ok) {
-          const fallbackMessage = `Submission failed with status ${response.status}.`;
-          const errorMessage = responseData?.message || fallbackMessage;
-          throw new Error(errorMessage);
-        }
-
-        statusText.textContent = 'Data sent successfully.';
-        statusText.style.color = 'var(--success)';
-        saveDraft(true);
-        return true;
-      } catch (error) {
-        statusText.textContent = error.message || 'Submission failed. Check backend URL, CORS, and Laravel logs.';
-        statusText.style.color = 'var(--danger)';
-        return false;
-      } finally {
-        submitButton.disabled = false;
-        submitButton.textContent = previousLabel;
-      }
-    }
-
-    document.addEventListener('click', (e) => {
-      const addBtn = e.target.closest('[data-add-repeat]');
-      if (addBtn) {
-        addRepeat(addBtn.dataset.addRepeat);
-      }
-      const removeBtn = e.target.closest('[data-remove-repeat]');
-      if (removeBtn) {
-        removeBtn.closest('.repeat-card')?.remove();
-        updateProgress();
-      }
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+      body: buildSubmissionFormData()
     });
 
-    form.addEventListener('input', () => {
-      updateProgress();
-      maybeAutoAdvanceSection();
-    });
-    form.addEventListener('change', () => {
-      updateProgress();
-      maybeAutoAdvanceSection();
-    });
-    form.addEventListener('change', (e) => {
-      if (e.target === assessmentType || e.target.id === 'measurementsTaken') updateVisibility();
-    });
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (validateForm(true)) {
-        await submitToLaravel();
-      }
-    });
-
-    const saveDraftBtn = document.getElementById('saveDraftBtn');
-    const loadDraftBtn = document.getElementById('loadDraftBtn');
-    const exportJsonBtn = document.getElementById('exportJsonBtn');
-    const printBtn = document.getElementById('printBtn');
-    const validateBtn = document.getElementById('validateBtn');
-
-    if (saveDraftBtn) saveDraftBtn.addEventListener('click', saveDraft);
-    if (loadDraftBtn) loadDraftBtn.addEventListener('click', loadDraft);
-    if (exportJsonBtn) exportJsonBtn.addEventListener('click', exportJson);
-    if (printBtn) printBtn.addEventListener('click', () => window.print());
-    if (validateBtn) validateBtn.addEventListener('click', () => validateForm(true));
-    prevButtons.forEach(btn => btn.addEventListener('click', goPrevSection));
-    nextButtons.forEach(btn => btn.addEventListener('click', goNextSection));
-    navLinks.forEach((link, index) => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (index > currentSectionIndex && !validateSection(currentSectionIndex, true)) return;
-        goToSection(index);
-      });
-    });
-
-    generateRef();
-    const restoredEndpoint = (localStorage.getItem(endpointStorageKey) || '').trim();
-    if (restoredEndpoint && !(form.dataset.submitEndpoint || '').trim()) {
-      form.dataset.submitEndpoint = restoredEndpoint;
+    let data = null;
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) data = await response.json();
+    if (!response.ok) {
+      showToast(data?.message || `Submission failed (${response.status})`);
+      return;
     }
-    addRepeat('measurement');
-    addRepeat('roof');
-    addRepeat('shade');
-    updateVisibility();
-    goToSection(0, { silent: true });
-    updateProgress();
-    isInitializingWizard = false;
-  
+    showToast('Data sent successfully');
+    localStorage.setItem(draftKey, JSON.stringify(collectDraftData()));
+  } catch (error) {
+    showToast(error.message || 'Submission failed');
+  }
+}
+
+function handleMethod() {
+  const value = document.getElementById('assessMethod')?.value || '';
+  document.getElementById('remoteBlock')?.classList.toggle('show', value === 'Remote / Desktop' || value === 'Hybrid');
+}
+function handleAssessType() {}
+function toggleTx() { document.getElementById('txBlock')?.classList.toggle('show', document.getElementById('txPresent')?.value === 'Yes'); }
+function toggleBess() { document.getElementById('bessBlock')?.classList.toggle('show', document.getElementById('bessRequired')?.value === 'yes'); }
+function handleConsumData() {
+  const v = document.getElementById('consumDataType')?.value || '';
+  document.getElementById('billsBlock')?.classList.toggle('show', v === 'bills');
+  document.getElementById('intervalBlock')?.classList.toggle('show', v === 'interval');
+  document.getElementById('newBuildBlock')?.classList.toggle('show', v === 'new');
+  document.getElementById('pendingBlock')?.classList.toggle('show', v === 'pending');
+}
+function togglePill(input) { input.parentElement.classList.toggle('checked', input.checked); updateProgress(); }
+
+function addMeasurement() { measureCount++; appendCard('measureList', `Measurement #${measureCount}`); }
+function addLoad() { loadCount++; appendCard('loadList', `Load Item #${loadCount}`); }
+function addRoof() { roofCount++; appendCard('roofList', `Roof Area #${roofCount}`); }
+function addGround() { groundCount++; appendCard('groundList', `Ground Area #${groundCount}`); }
+function addShading() { shadingCount++; appendCard('shadingList', `Shading #${shadingCount}`); }
+
+function appendCard(targetId, title) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  if (targetId === 'measureList') {
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="card-title">${title}</div>
+        <button type="button" class="btn-remove" onclick="this.closest('.card').remove(); updateProgress();">Remove</button>
+      </div>
+      <div class="field-grid cols-3">
+        <div class="field">
+          <label>Parameter</label>
+          <select><option value="">Select</option><option>Voltage</option><option>Current</option><option>Frequency</option><option>Power</option><option>Demand</option><option>Temperature</option><option>Other</option></select>
+        </div>
+        <div class="field">
+          <label>Measured Value</label>
+          <input type="text" placeholder="Value + unit">
+        </div>
+        <div class="field">
+          <label>Time of Measurement</label>
+          <input type="time">
+        </div>
+        <div class="field">
+          <label>Instrument Used</label>
+          <input type="text" placeholder="e.g. Fluke 175">
+        </div>
+        <div class="field span-2">
+          <label>Notes</label>
+          <input type="text" placeholder="">
+        </div>
+      </div>`;
+  } else if (targetId === 'loadList') {
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="card-title">${title}</div>
+        <button type="button" class="btn-remove" onclick="this.closest('.card').remove(); updateProgress();">Remove</button>
+      </div>
+      <div class="field-grid cols-3">
+        <div class="field">
+          <label>Appliance / Load Description</label>
+          <input type="text" placeholder="e.g. Air conditioning, lighting, pump">
+        </div>
+        <div class="field">
+          <label>Quantity</label>
+          <input type="number" placeholder="">
+        </div>
+        <div class="field">
+          <label>Rated Power (kW each)</label>
+          <input type="number" placeholder="">
+        </div>
+        <div class="field">
+          <label>Hours / Day</label>
+          <input type="number" placeholder="">
+        </div>
+        <div class="field">
+          <label>Critical Load? (backup needed)</label>
+          <select><option>Yes</option><option>No</option></select>
+        </div>
+        <div class="field">
+          <label>Notes</label>
+          <input type="text" placeholder="">
+        </div>
+      </div>`;
+  } else if (targetId === 'roofList') {
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="card-title">${title}</div>
+        <button type="button" class="btn-remove" onclick="this.closest('.card').remove(); updateProgress();">Remove</button>
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label>Roof Type / Material</label>
+          <select><option value="">Select</option><option>IBR / Corrugated Steel</option><option>Klip-Lok / Standing Seam</option><option>Flat Concrete / RC Slab</option><option>Tiled — Clay or Concrete</option><option>Single-Ply Membrane</option><option>Metal Deck</option><option>Thatch / Organic</option><option>Other</option></select>
+        </div>
+        <div class="field">
+          <label>Roof Geometry</label>
+          <select><option value="">Select</option><option>Flat</option><option>Pitched</option><option>Curved</option><option>Multi-level</option></select>
+        </div>
+        <div class="field">
+          <label>Estimated Usable Area (m²)</label>
+          <input type="number" placeholder="">
+        </div>
+        <div class="field">
+          <label>Approximate Dimensions (m)</label>
+          <input type="text" placeholder="e.g. 20m × 15m">
+        </div>
+        <div class="field">
+          <label>Orientation / Azimuth</label>
+          <input type="text" placeholder="e.g. North, 15°">
+        </div>
+        <div class="field">
+          <label>Tilt / Pitch (degrees)</label>
+          <input type="number" placeholder="e.g. 20">
+        </div>
+        <div class="field">
+          <label>Roof Condition (visual)</label>
+          <select><option value="">Select</option><option>Excellent</option><option>Good</option><option>Fair — monitor</option><option>Poor — repair before install</option></select>
+        </div>
+        <div class="field">
+          <label>Approximate Roof Age (years)</label>
+          <input type="number" placeholder="">
+        </div>
+        <div class="field">
+          <label>Obstructions Present</label>
+          <input type="text" placeholder="Vents, HVAC, skylights, pipes">
+        </div>
+        <div class="field">
+          <label>Photo References</label>
+          <select><option>Cellphone images taken</option><option>Drone images taken</option><option>Both</option><option>No images taken</option></select>
+        </div>
+      </div>`;
+  } else if (targetId === 'groundList') {
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="card-title">${title}</div>
+        <button type="button" class="btn-remove" onclick="this.closest('.card').remove(); updateProgress();">Remove</button>
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label>Area Name / Reference</label>
+          <input type="text" placeholder="">
+        </div>
+        <div class="field">
+          <label>Estimated Usable Area (m²)</label>
+          <input type="number" placeholder="">
+        </div>
+        <div class="field">
+          <label>Surface Condition</label>
+          <select><option value="">Select</option><option>Concrete</option><option>Gravel</option><option>Compacted soil</option><option>Paved</option><option>Mixed</option><option>Other</option></select>
+        </div>
+        <div class="field">
+          <label>Ground Slope</label>
+          <select><option value="">Select</option><option>Flat</option><option>Slight</option><option>Moderate</option><option>Severe</option></select>
+        </div>
+        <div class="field">
+          <label>Drainage Condition</label>
+          <select><option value="">Select</option><option>Good</option><option>Moderate</option><option>Poor</option></select>
+        </div>
+        <div class="field">
+          <label>Flooding Risk</label>
+          <select><option value="">Select</option><option>None</option><option>Low</option><option>Moderate</option><option>High</option></select>
+        </div>
+        <div class="field">
+          <label>Underground Services Likely?</label>
+          <select><option value="">Select</option><option>Yes</option><option>No</option><option>Unknown</option></select>
+        </div>
+        <div class="field">
+          <label>Geotechnical Verification Needed?</label>
+          <select><option value="">Select</option><option>Yes</option><option>No</option><option>To be confirmed</option></select>
+        </div>
+        <div class="field">
+          <label>Vehicle / Crane Access</label>
+          <select><option value="">Select</option><option>Good — direct access</option><option>Limited</option><option>No access</option></select>
+        </div>
+        <div class="field">
+          <label>Nearby Shading Sources</label>
+          <input type="text" placeholder="Trees, buildings, structures">
+        </div>
+      </div>`;
+  } else if (targetId === 'shadingList') {
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="card-title">${title}</div>
+        <button type="button" class="btn-remove" onclick="this.closest('.card').remove(); updateProgress();">Remove</button>
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label>Main Shade Sources</label>
+          <input type="text" placeholder="e.g. Large tree to east, neighbouring building">
+        </div>
+        <div class="field">
+          <label>Time of Observation</label>
+          <input type="time">
+        </div>
+        <div class="field">
+          <label>Hours Affected (estimated)</label>
+          <input type="text" placeholder="e.g. 08:00–11:00">
+        </div>
+        <div class="field">
+          <label>Severity</label>
+          <select><option value="">Select</option><option>Low — partial / edge shading</option><option>Medium — significant but not full</option><option>High — full shading during peak hours</option><option>Exclusion area</option></select>
+        </div>
+        <div class="field">
+          <label>Seasonal Concern</label>
+          <input type="text" placeholder="e.g. Worse in winter (lower sun angle)">
+        </div>
+        <div class="field">
+          <label>Notes</label>
+          <input type="text" placeholder="">
+        </div>
+      </div>`;
+  } else {
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="card-title">${title}</div>
+        <button type="button" class="btn-remove" onclick="this.closest('.card').remove(); updateProgress();">Remove</button>
+      </div>
+      <div class="field-grid">
+        <div class="field"><label>Name</label><input type="text"></div>
+        <div class="field"><label>Value</label><input type="text"></div>
+      </div>`;
+  }
+  document.getElementById(targetId)?.appendChild(card);
+  ensureFieldIdentifiers(card);
+}
+
+function addExtraPhoto() {
+  extraPhotoCount++;
+  const id = `eps${extraPhotoCount}`;
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="card-header">
+      <div class="card-title">Additional Photo #${extraPhotoCount}</div>
+      <button type="button" class="btn-remove" onclick="this.closest('.card').remove(); updateProgress();">Remove</button>
+    </div>
+    <div class="field-grid">
+      <div class="field">
+        <label>Subject / Description</label>
+        <input type="text" placeholder="What does this photo show?">
+      </div>
+      <div class="field">
+        <label>Upload</label>
+        <div class="photo-upload-btn">📁 Upload Photo<input type="file" accept="image/*" onchange="previewPhoto(this,'${id}')"></div>
+        <img class="photo-preview" id="prev_${id}" style="margin-top:6px;">
+      </div>
+    </div>`;
+  document.getElementById('extraPhotos')?.appendChild(card);
+  ensureFieldIdentifiers(card);
+}
+
+function previewPhoto(input, slotId) {
+  if (!input.files || !input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = document.getElementById(`prev_${slotId}`);
+    if (!img) return;
+    img.src = e.target.result;
+    img.style.display = 'block';
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+window.addEventListener('load', () => {
+  const form = getForm();
+  if (!form) return;
+  document.querySelectorAll('button:not([type])').forEach((btn) => { btn.type = 'button'; });
+  ensureFieldIdentifiers();
+  generateRef();
+  loadDraft();
+  goTo(0);
+  updateProgress();
+
+  const restored = localStorage.getItem(endpointKey);
+  if (restored && !form.dataset.submitEndpoint) form.dataset.submitEndpoint = restored;
+
+  const dateField = document.getElementById('assessDate');
+  const today = new Date().toISOString().split('T')[0];
+  if (dateField && !dateField.value) dateField.value = today;
+
+  document.addEventListener('change', () => { updateProgress(); maybeAutoAdvance(); });
+  document.addEventListener('input', () => { updateProgress(); maybeAutoAdvance(); });
+});
