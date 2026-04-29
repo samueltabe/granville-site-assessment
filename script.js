@@ -157,6 +157,12 @@ function findSectionValidationError(section) {
   return null;
 }
 
+function sectionHasRequiredFields(section) {
+  if (!section) return false;
+  const fields = [...section.querySelectorAll('input, select, textarea')].filter(fieldVisible);
+  return fields.some(isFieldRequired);
+}
+
 function focusValidationError(error) {
   if (!error?.field) return;
   error.field.setAttribute('aria-invalid', 'true');
@@ -202,12 +208,7 @@ function updateProgress() {
 }
 
 function maybeAutoAdvance() {
-  if (autoAdvanceLock || currentSection >= totalSections - 1) return;
-  const section = document.getElementById(`sec${currentSection}`);
-  if (!sectionIsComplete(section)) return;
-  autoAdvanceLock = true;
-  goTo(currentSection + 1);
-  setTimeout(() => { autoAdvanceLock = false; }, 180);
+  return;
 }
 
 function collectDraftData() {
@@ -613,6 +614,6 @@ window.addEventListener('load', () => {
   const today = new Date().toISOString().split('T')[0];
   if (dateField && !dateField.value) dateField.value = today;
 
-  document.addEventListener('change', () => { updateProgress(); maybeAutoAdvance(); });
-  document.addEventListener('input', () => { updateProgress(); maybeAutoAdvance(); });
+  document.addEventListener('change', () => { updateProgress(); });
+  document.addEventListener('input', () => { updateProgress(); });
 });
