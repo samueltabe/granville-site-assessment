@@ -163,6 +163,17 @@ function sectionHasRequiredFields(section) {
   return fields.some(isFieldRequired);
 }
 
+function sectionHasAnyUserInput(section) {
+  if (!section) return false;
+  const fields = [...section.querySelectorAll('input, select, textarea')].filter(fieldVisible);
+  return fields.some((field) => {
+    if (field.readOnly || field.disabled) return false;
+    if (field.type === 'checkbox' || field.type === 'radio') return field.checked;
+    if (field.type === 'file') return Boolean(field.files && field.files.length);
+    return Boolean(String(field.value || '').trim());
+  });
+}
+
 function focusValidationError(error) {
   if (!error?.field) return;
   error.field.setAttribute('aria-invalid', 'true');
@@ -182,7 +193,8 @@ function updateNavChecks() {
   document.querySelectorAll('.form-section').forEach((section, i) => {
     const nav = document.querySelectorAll('.nav-item')[i];
     if (!nav) return;
-    const done = sectionIsComplete(section);
+    const hasInput = sectionHasAnyUserInput(section);
+    const done = hasInput && sectionIsComplete(section);
     nav.classList.toggle('done', done);
     const check = nav.querySelector('.nav-check');
     if (check) check.textContent = done ? '✓' : '';
@@ -597,9 +609,30 @@ function previewPhoto(input, slotId) {
   reader.readAsDataURL(input.files[0]);
 }
 
+function pageWasReloaded() {
+  const navEntries = performance.getEntriesByType?.('navigation') || [];
+  if (navEntries.length && navEntries[0].type === 'reload') return true;
+  return performance.navigation && performance.navigation.type === 1;
+}
+
+function clearFormData(form) {
+  if (!form) return;
+  form.reset();
+  localStorage.removeItem(draftKey);
+  document.querySelectorAll('.check-pill input[type="checkbox"], .check-pill input[type="radio"]').forEach((input) => {
+    input.checked = false;
+    input.parentElement?.classList.remove('checked');
+  });
+  document.querySelectorAll('.photo-preview').forEach((img) => {
+    img.removeAttribute('src');
+    img.style.display = 'none';
+  });
+}
+
 window.addEventListener('load', () => {
   const form = getForm();
   if (!form) return;
+  if (pageWasReloaded()) clearFormData(form);
   document.querySelectorAll('button:not([type])').forEach((btn) => { btn.type = 'button'; });
   ensureFieldIdentifiers();
   generateRef();
