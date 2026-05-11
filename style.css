@@ -85,26 +85,22 @@
     position: sticky;
     top: 0;
     z-index: 100;
+    overflow: hidden;
   }
   .site-header .logo {
     display: flex;
     align-items: center;
+    flex-shrink: 0;
+    max-height: 48px;
     line-height: 0;
+    overflow: hidden;
   }
   .site-header .logo .logo-img {
-    height: 36px;
+    height: 40px;
+    max-height: 40px;
     width: auto;
-    max-width: min(240px, 46vw);
+    max-width: min(220px, 50vw);
     object-fit: contain;
-    display: block;
-  }
-  .site-header .logo .logo-img--dark {
-    display: none;
-  }
-  [data-theme="dark"] .site-header .logo .logo-img--light {
-    display: none;
-  }
-  [data-theme="dark"] .site-header .logo .logo-img--dark {
     display: block;
   }
   .header-right {

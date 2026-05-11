@@ -29,6 +29,10 @@ function applyTheme(theme) {
   const mode = theme === 'dark' ? 'dark' : 'light';
   document.documentElement.setAttribute('data-theme', mode);
   localStorage.setItem(themeKey, mode);
+  const logo = document.getElementById('headerLogo');
+  if (logo) {
+    logo.src = mode === 'dark' ? './img/logowhite.png' : './img/logoblack.png';
+  }
   const btn = document.getElementById('themeToggle');
   if (btn) {
     btn.innerHTML = mode === 'dark' ? themeToggleSunSvg() : themeToggleMoonSvg();
