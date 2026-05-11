@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,6 +17,9 @@
     <div class="logo">Granville <span>Energy</span></div>
     <div class="header-right">
       <div class="progress-pill">Completion <span class="pct" id="pctDisplay">0%</span></div>
+      <button type="button" class="theme-toggle" id="themeToggle" aria-label="Switch to dark mode">
+        <svg class="theme-toggle-icon theme-toggle-moon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+      </button>
       <button type="button" class="btn-save" onclick="saveDraft()">Save Draft</button>
     </div>
   </header>
@@ -1897,47 +1900,47 @@
             <tbody>
               <tr>
                 <td>Electricity bills (recent / 12 months)</td>
-                <td><select style="background:var(--gray-2);border:1px solid var(--gray-3);border-radius:3px;color:var(--white);font-size:11px;padding:4px;width:100%"><option>Yes</option><option>No</option><option>To be sent</option></select></td>
+                <td><select class="table-inline-select"><option>Yes</option><option>No</option><option>To be sent</option></select></td>
                 <td><input type="text"></td>
               </tr>
               <tr>
                 <td>Electrical compliance certificate (CoC / EICR / equivalent)</td>
-                <td><select style="background:var(--gray-2);border:1px solid var(--gray-3);border-radius:3px;color:var(--white);font-size:11px;padding:4px;width:100%"><option>Yes</option><option>No</option><option>In progress</option><option>N/A</option></select></td>
+                <td><select class="table-inline-select"><option>Yes</option><option>No</option><option>In progress</option><option>N/A</option></select></td>
                 <td><input type="text"></td>
               </tr>
               <tr>
                 <td>Existing electrical SLD / single-line diagram</td>
-                <td><select style="background:var(--gray-2);border:1px solid var(--gray-3);border-radius:3px;color:var(--white);font-size:11px;padding:4px;width:100%"><option>Yes</option><option>No</option><option>To be sent</option></select></td>
+                <td><select class="table-inline-select"><option>Yes</option><option>No</option><option>To be sent</option></select></td>
                 <td><input type="text"></td>
               </tr>
               <tr>
                 <td>Load profile / interval data</td>
-                <td><select style="background:var(--gray-2);border:1px solid var(--gray-3);border-radius:3px;color:var(--white);font-size:11px;padding:4px;width:100%"><option>Yes</option><option>No</option><option>To be sent</option></select></td>
+                <td><select class="table-inline-select"><option>Yes</option><option>No</option><option>To be sent</option></select></td>
                 <td><input type="text"></td>
               </tr>
               <tr>
                 <td>Building plans / roof drawings</td>
-                <td><select style="background:var(--gray-2);border:1px solid var(--gray-3);border-radius:3px;color:var(--white);font-size:11px;padding:4px;width:100%"><option>Yes</option><option>No</option><option>To be sent</option></select></td>
+                <td><select class="table-inline-select"><option>Yes</option><option>No</option><option>To be sent</option></select></td>
                 <td><input type="text"></td>
               </tr>
               <tr>
                 <td>Utility tariff schedule</td>
-                <td><select style="background:var(--gray-2);border:1px solid var(--gray-3);border-radius:3px;color:var(--white);font-size:11px;padding:4px;width:100%"><option>Yes</option><option>No</option><option>To be sent</option></select></td>
+                <td><select class="table-inline-select"><option>Yes</option><option>No</option><option>To be sent</option></select></td>
                 <td><input type="text"></td>
               </tr>
               <tr>
                 <td>Grid connection / utility interconnection documents</td>
-                <td><select style="background:var(--gray-2);border:1px solid var(--gray-3);border-radius:3px;color:var(--white);font-size:11px;padding:4px;width:100%"><option>Yes</option><option>No</option><option>N/A</option></select></td>
+                <td><select class="table-inline-select"><option>Yes</option><option>No</option><option>N/A</option></select></td>
                 <td><input type="text"></td>
               </tr>
               <tr>
                 <td>Existing solar / battery system documents</td>
-                <td><select style="background:var(--gray-2);border:1px solid var(--gray-3);border-radius:3px;color:var(--white);font-size:11px;padding:4px;width:100%"><option>Yes</option><option>No</option><option>N/A</option></select></td>
+                <td><select class="table-inline-select"><option>Yes</option><option>No</option><option>N/A</option></select></td>
                 <td><input type="text"></td>
               </tr>
               <tr>
                 <td>Land ownership / title documents (utility-scale)</td>
-                <td><select style="background:var(--gray-2);border:1px solid var(--gray-3);border-radius:3px;color:var(--white);font-size:11px;padding:4px;width:100%"><option>Yes</option><option>No</option><option>N/A</option></select></td>
+                <td><select class="table-inline-select"><option>Yes</option><option>No</option><option>N/A</option></select></td>
                 <td><input type="text"></td>
               </tr>
             </tbody>

@@ -2,6 +2,7 @@ let currentSection = 0;
 const totalSections = 13;
 const draftKey = 'ge_draft';
 const endpointKey = 'ge_submit_endpoint';
+const themeKey = 'ge_theme';
 let measureCount = 0;
 let loadCount = 0;
 let roofCount = 0;
@@ -11,6 +12,38 @@ let extraPhotoCount = 0;
 let autoAdvanceLock = false;
 
 function getForm() { return document.getElementById('siteAssessmentForm'); }
+
+function getTheme() {
+  return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+}
+
+function themeToggleMoonSvg() {
+  return `<svg class="theme-toggle-icon theme-toggle-moon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`;
+}
+
+function themeToggleSunSvg() {
+  return `<svg class="theme-toggle-icon theme-toggle-sun" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>`;
+}
+
+function applyTheme(theme) {
+  const mode = theme === 'dark' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', mode);
+  localStorage.setItem(themeKey, mode);
+  const btn = document.getElementById('themeToggle');
+  if (btn) {
+    btn.innerHTML = mode === 'dark' ? themeToggleSunSvg() : themeToggleMoonSvg();
+    btn.setAttribute('aria-label', mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+  }
+}
+
+function toggleTheme() {
+  applyTheme(getTheme() === 'dark' ? 'light' : 'dark');
+}
+
+function initTheme() {
+  const saved = localStorage.getItem(themeKey);
+  applyTheme(saved === 'dark' ? 'dark' : 'light');
+}
 
 function showToast(message) {
   const toast = document.getElementById('toast');
@@ -630,6 +663,9 @@ function clearFormData(form) {
 }
 
 window.addEventListener('load', () => {
+  initTheme();
+  document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
+
   const form = getForm();
   if (!form) return;
   if (pageWasReloaded()) clearFormData(form);
