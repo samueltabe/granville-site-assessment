@@ -507,11 +507,10 @@ window.getFormValidationIssues = getFormValidationIssues;
 window.goToValidationIssue = goToValidationIssue;
 window.fieldVisible = fieldVisible;
 
-window.addEventListener('load', () => {
+function initSiteAssessmentApp() {
   initTheme();
   document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
 
-  if (typeof window.renderSiteForm === 'function') window.renderSiteForm();
   totalSections = typeof window.getFormSectionCount === 'function' ? window.getFormSectionCount() : 0;
 
   const form = getForm();
@@ -547,4 +546,6 @@ window.addEventListener('load', () => {
   document.addEventListener('change', (event) => {
     if (event.target.matches('input, select, textarea')) clearValidationHighlights();
   });
-});
+}
+
+window.initSiteAssessmentApp = initSiteAssessmentApp;

@@ -51,7 +51,38 @@
   </div>
 
   <div class="toast" id="toast"></div>
-  <script src="./form-builder.js"></script>
-  <script src="./script.js"></script>
+  <div class="boot-error hidden" id="bootError" role="alert"></div>
+  <script src="./form-builder.js?v=1.1.1"></script>
+  <script src="./script.js?v=1.1.1"></script>
+  <script>
+    function showBootError(message) {
+      const el = document.getElementById('bootError');
+      if (!el) return;
+      el.textContent = message;
+      el.classList.remove('hidden');
+    }
+
+    function bootSiteAssessment() {
+      try {
+        if (typeof window.renderSiteForm !== 'function') {
+          showBootError('Form could not load (form-builder.js). Hard-refresh the page (Ctrl+F5).');
+          return;
+        }
+        window.renderSiteForm();
+        if (typeof window.initSiteAssessmentApp === 'function') {
+          window.initSiteAssessmentApp();
+        }
+      } catch (error) {
+        console.error(error);
+        showBootError('Form failed to start: ' + (error && error.message ? error.message : 'Unknown error'));
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bootSiteAssessment);
+    } else {
+      bootSiteAssessment();
+    }
+  </script>
 </body>
 </html>

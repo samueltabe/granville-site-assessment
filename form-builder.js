@@ -503,6 +503,11 @@
     }
 
     function render() {
+      const nav = document.getElementById("nav");
+      const mount = document.getElementById("sections");
+      if (!nav || !mount) {
+        throw new Error("Form containers #nav and #sections must exist before render.");
+      }
       renderNav();
       renderSections();
       bindEvents();
@@ -842,8 +847,10 @@
       const required = visibleRequiredControls();
       const complete = required.filter(isControlComplete);
       const percent = required.length ? Math.round((complete.length / required.length) * 100) : 0;
-      document.getElementById("progressText").textContent = `${percent}%`;
-      document.getElementById("progressBar").style.width = `${percent}%`;
+      const progressText = document.getElementById("progressText");
+      const progressBar = document.getElementById("progressBar");
+      if (progressText) progressText.textContent = `${percent}%`;
+      if (progressBar) progressBar.style.width = `${percent}%`;
     }
 
     function buildPhotoSummary() {
@@ -938,8 +945,10 @@
     }
 
     function updateNextLabel() {
-      document.getElementById("nextBtn").textContent = current === sections.length - 1 ? "Review" : "Next";
-      document.getElementById("prevBtn").disabled = current === 0;
+      const nextBtn = document.getElementById("nextBtn");
+      const prevBtn = document.getElementById("prevBtn");
+      if (nextBtn) nextBtn.textContent = current === sections.length - 1 ? "Review" : "Next";
+      if (prevBtn) prevBtn.disabled = current === 0;
     }
 
     function goToSection(index, shouldScroll = true) {

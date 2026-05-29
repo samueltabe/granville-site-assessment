@@ -541,6 +541,23 @@ textarea:focus {
 
 .hidden { display: none !important; }
 
+.boot-error {
+  position: fixed;
+  top: 88px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 14px 18px;
+  border: 1px solid rgba(224, 82, 82, 0.45);
+  border-radius: 8px;
+  background: #fff5f5;
+  color: #8b2a2a;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  box-shadow: 0 12px 32px rgba(17, 24, 39, 0.14);
+}
+
 .validation-list {
   display: grid;
   gap: 8px;
