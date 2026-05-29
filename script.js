@@ -1,15 +1,8 @@
 let currentSection = 0;
-const totalSections = 13;
+let totalSections = 0;
 const draftKey = 'ge_draft';
 const endpointKey = 'ge_submit_endpoint';
 const themeKey = 'ge_theme';
-let measureCount = 0;
-let loadCount = 0;
-let roofCount = 0;
-let groundCount = 0;
-let shadingCount = 0;
-let extraPhotoCount = 0;
-let autoAdvanceLock = false;
 
 function getForm() { return document.getElementById('siteAssessmentForm'); }
 
@@ -68,10 +61,14 @@ function slugify(value) {
 function getFieldLabelText(el) {
   const field = el.closest('.field');
   const label = field?.querySelector('label');
-  if (!label) return '';
-  const cloned = label.cloneNode(true);
-  cloned.querySelectorAll('.req').forEach((req) => req.remove());
-  return cloned.textContent.replace(/\s+/g, ' ').trim();
+  if (label) {
+    const cloned = label.cloneNode(true);
+    cloned.querySelectorAll('.req, .required').forEach((req) => req.remove());
+    return cloned.textContent.replace(/\s+/g, ' ').trim();
+  }
+  const photoSlot = el.closest('[data-photo-slot]');
+  if (photoSlot) return photoSlot.dataset.photoSlot || '';
+  return '';
 }
 
 function ensureFieldIdentifiers(scope = document) {
@@ -85,7 +82,7 @@ function ensureFieldIdentifiers(scope = document) {
     const fields = section.querySelectorAll('input, select, textarea');
 
     fields.forEach((el, fieldIndex) => {
-      const labelKey = slugify(getFieldLabelText(el)) || `${el.tagName.toLowerCase()}_${fieldIndex + 1}`;
+      const labelKey = slugify(getFieldLabelText(el) || el.dataset.photoInput || '') || `${el.tagName.toLowerCase()}_${fieldIndex + 1}`;
       const countKey = `${sectionKey}__${labelKey}`;
       const count = (seen.get(countKey) || 0) + 1;
       seen.set(countKey, count);
@@ -117,23 +114,26 @@ function ensureFieldIdentifiers(scope = document) {
 }
 
 function goTo(index) {
-  document.querySelectorAll('.form-section').forEach((s, i) => s.classList.toggle('active', i === index));
-  document.querySelectorAll('.nav-item').forEach((n, i) => n.classList.toggle('active', i === index));
+  if (typeof window.goToFormSection === 'function') {
+    window.goToFormSection(index);
+  } else {
+    document.querySelectorAll('.form-section').forEach((s, i) => s.classList.toggle('active', i === index));
+    document.querySelectorAll('.step-link').forEach((n, i) => n.classList.toggle('active', i === index));
+  }
   currentSection = index;
   updateProgress();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function fieldVisible(el) {
-  return el.offsetParent !== null || el.closest('.conditional-block.show');
+  return !el.closest('.hidden');
 }
 
 function isFieldRequired(field) {
   if (!field) return false;
-  if (field.required) return true;
+  if (field.required || field.dataset.required === 'true') return true;
   const fieldWrapper = field.closest('.field');
   const label = fieldWrapper?.querySelector('label');
-  return Boolean(label?.querySelector('.req'));
+  return Boolean(label?.querySelector('.req, .required'));
 }
 
 function getValidationLabel(field) {
@@ -145,6 +145,21 @@ function getValidationLabel(field) {
 
 function findSectionValidationError(section) {
   if (!section) return null;
+
+  const requiredCheckGroups = [...section.querySelectorAll('[data-check-group="true"][data-required="true"]')].filter(fieldVisible);
+  for (const group of requiredCheckGroups) {
+    if (!group.querySelector('input:checked')) {
+      const labelEl = group.closest('.field')?.querySelector('label');
+      const label = labelEl ? getFieldLabelText(group.querySelector('input') || group) : 'This field';
+      const firstInput = group.querySelector('input');
+      return {
+        field: firstInput || group,
+        label,
+        message: `Please select at least one option for "${label}".`
+      };
+    }
+  }
+
   const fields = [...section.querySelectorAll('input, select, textarea')].filter(fieldVisible);
   if (!fields.length) return null;
 
@@ -182,6 +197,18 @@ function findSectionValidationError(section) {
       continue;
     }
 
+    if (field.tagName === 'SELECT') {
+      const val = String(field.value || '').trim();
+      if (!val || /^select\b/i.test(val)) {
+        return {
+          field,
+          label: getValidationLabel(field),
+          message: `Please fill "${getValidationLabel(field)}".`
+        };
+      }
+      continue;
+    }
+
     if (!String(field.value || '').trim()) {
       return {
         field,
@@ -211,15 +238,100 @@ function sectionHasAnyUserInput(section) {
   });
 }
 
-function focusValidationError(error) {
-  if (!error?.field) return;
-  error.field.setAttribute('aria-invalid', 'true');
-  setTimeout(() => {
-    error.field.focus({ preventScroll: false });
-    if (typeof error.field.select === 'function' && (error.field.type === 'text' || error.field.tagName === 'TEXTAREA')) {
-      error.field.select();
+function getSectionTitle(section, index) {
+  const navTitle = document.querySelector(`.step-link[data-step="${index}"] .step-title`);
+  if (navTitle) return navTitle.textContent.trim();
+  const heading = section?.querySelector('.section-head h2, h2');
+  return heading?.textContent.trim() || `Section ${index + 1}`;
+}
+
+function findAllValidationErrors() {
+  const errors = [];
+  for (let i = 0; i < totalSections; i++) {
+    const section = document.getElementById(`sec${i}`);
+    const error = findSectionValidationError(section);
+    if (error) {
+      errors.push({
+        ...error,
+        sectionIndex: i,
+        sectionTitle: getSectionTitle(section, i)
+      });
     }
-  }, 80);
+  }
+  return errors;
+}
+
+function findMissingRequiredPhotos() {
+  return [...document.querySelectorAll('[data-required-photo="true"]')]
+    .filter((slot) => fieldVisible(slot) && !slot.classList.contains('complete'))
+    .map((slot) => {
+      const section = slot.closest('.form-section');
+      const sectionIndex = Number(section?.dataset.section ?? section?.id?.replace('sec', '') ?? 0);
+      return {
+        field: slot.querySelector('[data-photo-input]') || slot.querySelector('input[type="file"]'),
+        label: slot.dataset.photoSlot || 'Photo',
+        sectionIndex,
+        sectionTitle: getSectionTitle(section, sectionIndex),
+        message: `Please upload: "${slot.dataset.photoSlot || 'Photo'}".`
+      };
+    });
+}
+
+function clearValidationHighlights() {
+  document.querySelectorAll('.field-invalid, .photo-slot-invalid, .subsection-invalid').forEach((el) => {
+    el.classList.remove('field-invalid', 'photo-slot-invalid', 'subsection-invalid');
+  });
+  document.querySelectorAll('[aria-invalid="true"]').forEach((el) => el.removeAttribute('aria-invalid'));
+}
+
+function highlightValidationError(error) {
+  clearValidationHighlights();
+  const field = error?.field;
+  if (!field) return;
+
+  const wrapper =
+    field.closest('.field') ||
+    field.closest('.photo-slot') ||
+    field.closest('.repeat-item') ||
+    field.closest('.subsection');
+  if (wrapper) {
+    wrapper.classList.add(wrapper.classList.contains('photo-slot') ? 'photo-slot-invalid' : 'field-invalid');
+    wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  field.setAttribute('aria-invalid', 'true');
+  setTimeout(() => {
+    if (typeof field.focus === 'function' && field.type !== 'hidden') {
+      field.focus({ preventScroll: true });
+    }
+    if (typeof field.select === 'function' && (field.type === 'text' || field.tagName === 'TEXTAREA')) {
+      field.select();
+    }
+  }, 120);
+}
+
+function focusValidationError(error) {
+  highlightValidationError(error);
+}
+
+function goToValidationIssue(issue) {
+  if (!issue) return;
+  goTo(issue.sectionIndex);
+  setTimeout(() => highlightValidationError(issue), 180);
+}
+
+function getFormValidationIssues() {
+  return {
+    fields: findAllValidationErrors(),
+    photos: findMissingRequiredPhotos()
+  };
+}
+
+function formatIssueList(issues, max = 3) {
+  const slice = issues.slice(0, max);
+  const labels = slice.map((i) => `“${i.label}” (${i.sectionTitle})`).join(', ');
+  const extra = issues.length > max ? ` (+${issues.length - max} more)` : '';
+  return `${labels}${extra}`;
 }
 
 function sectionIsComplete(section) {
@@ -228,36 +340,19 @@ function sectionIsComplete(section) {
 
 function updateNavChecks() {
   document.querySelectorAll('.form-section').forEach((section, i) => {
-    const nav = document.querySelectorAll('.nav-item')[i];
+    const nav = document.querySelectorAll('.step-link')[i];
     if (!nav) return;
     const hasInput = sectionHasAnyUserInput(section);
     const done = hasInput && sectionIsComplete(section);
+    const hasError = Boolean(findSectionValidationError(section));
     nav.classList.toggle('done', done);
-    const check = nav.querySelector('.nav-check');
-    if (check) check.textContent = done ? '✓' : '';
+    nav.classList.toggle('has-error', hasError);
   });
 }
 
 function updateProgress() {
-  const form = getForm();
-  if (!form) return;
-  const fields = [...form.querySelectorAll('input:not([type="file"]):not([readonly]), select, textarea')];
-  let filled = 0;
-  for (const field of fields) {
-    if (field.type === 'checkbox' || field.type === 'radio') {
-      if (field.checked) filled++;
-    } else if (String(field.value || '').trim()) {
-      filled++;
-    }
-  }
-  const pct = fields.length ? Math.min(100, Math.round((filled / fields.length) * 100)) : 0;
-  const pctDisplay = document.getElementById('pctDisplay');
-  if (pctDisplay) pctDisplay.textContent = `${pct}%`;
+  if (typeof window.updateFormProgress === 'function') window.updateFormProgress();
   updateNavChecks();
-}
-
-function maybeAutoAdvance() {
-  return;
 }
 
 function collectDraftData() {
@@ -307,11 +402,12 @@ function loadDraft() {
 }
 
 function generateRef() {
+  const ref = document.getElementById('refId');
+  if (!ref || String(ref.value || '').trim()) return;
   const now = new Date();
   const code = now.getFullYear().toString().slice(-2) + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
   const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
-  const ref = document.getElementById('refId');
-  if (ref) ref.value = `GE-SAR-${code}-${rand}`;
+  ref.value = `GE-SAR-${code}-${rand}`;
 }
 
 function resolveSubmitEndpoint() {
@@ -338,16 +434,18 @@ function buildSubmissionFormData() {
 }
 
 async function submitForm() {
-  for (let i = 0; i < totalSections; i++) {
-    const section = document.getElementById(`sec${i}`);
-    const error = findSectionValidationError(section);
-    if (error) {
-      goTo(i);
-      showToast(error.message);
-      focusValidationError(error);
-      return;
-    }
+  clearValidationHighlights();
+  const { fields, photos } = getFormValidationIssues();
+  const blocking = [...fields, ...photos];
+
+  if (blocking.length) {
+    goToValidationIssue(blocking[0]);
+    showToast(blocking[0].message || `Please complete ${formatIssueList(blocking)}`);
+    if (typeof window.buildFormWarnings === 'function') window.buildFormWarnings(true);
+    return;
   }
+
+  if (typeof window.buildFormWarnings === 'function') window.buildFormWarnings(true);
 
   let endpoint = resolveSubmitEndpoint();
   if (!endpoint) {
@@ -381,271 +479,6 @@ async function submitForm() {
   }
 }
 
-function handleMethod() {
-  const value = document.getElementById('assessMethod')?.value || '';
-  document.getElementById('remoteBlock')?.classList.toggle('show', value === 'Remote / Desktop' || value === 'Hybrid');
-}
-function handleAssessType() {}
-function toggleTx() { document.getElementById('txBlock')?.classList.toggle('show', document.getElementById('txPresent')?.value === 'Yes'); }
-function toggleBess() { document.getElementById('bessBlock')?.classList.toggle('show', document.getElementById('bessRequired')?.value === 'yes'); }
-function handleConsumData() {
-  const v = document.getElementById('consumDataType')?.value || '';
-  document.getElementById('billsBlock')?.classList.toggle('show', v === 'bills');
-  document.getElementById('intervalBlock')?.classList.toggle('show', v === 'interval');
-  document.getElementById('newBuildBlock')?.classList.toggle('show', v === 'new');
-  document.getElementById('pendingBlock')?.classList.toggle('show', v === 'pending');
-}
-function togglePill(input) { input.parentElement.classList.toggle('checked', input.checked); updateProgress(); }
-
-function addMeasurement() { measureCount++; appendCard('measureList', `Measurement #${measureCount}`); }
-function addLoad() { loadCount++; appendCard('loadList', `Load Item #${loadCount}`); }
-function addRoof() { roofCount++; appendCard('roofList', `Roof Area #${roofCount}`); }
-function addGround() { groundCount++; appendCard('groundList', `Ground Area #${groundCount}`); }
-function addShading() { shadingCount++; appendCard('shadingList', `Shading #${shadingCount}`); }
-
-function appendCard(targetId, title) {
-  const card = document.createElement('div');
-  card.className = 'card';
-  if (targetId === 'measureList') {
-    card.innerHTML = `
-      <div class="card-header">
-        <div class="card-title">${title}</div>
-        <button type="button" class="btn-remove" onclick="this.closest('.card').remove(); updateProgress();">Remove</button>
-      </div>
-      <div class="field-grid cols-3">
-        <div class="field">
-          <label>Parameter</label>
-          <select><option value="">Select</option><option>Voltage</option><option>Current</option><option>Frequency</option><option>Power</option><option>Demand</option><option>Temperature</option><option>Other</option></select>
-        </div>
-        <div class="field">
-          <label>Measured Value</label>
-          <input type="text" placeholder="Value + unit">
-        </div>
-        <div class="field">
-          <label>Time of Measurement</label>
-          <input type="time">
-        </div>
-        <div class="field">
-          <label>Instrument Used</label>
-          <input type="text" placeholder="e.g. Fluke 175">
-        </div>
-        <div class="field span-2">
-          <label>Notes</label>
-          <input type="text" placeholder="">
-        </div>
-      </div>`;
-  } else if (targetId === 'loadList') {
-    card.innerHTML = `
-      <div class="card-header">
-        <div class="card-title">${title}</div>
-        <button type="button" class="btn-remove" onclick="this.closest('.card').remove(); updateProgress();">Remove</button>
-      </div>
-      <div class="field-grid cols-3">
-        <div class="field">
-          <label>Appliance / Load Description</label>
-          <input type="text" placeholder="e.g. Air conditioning, lighting, pump">
-        </div>
-        <div class="field">
-          <label>Quantity</label>
-          <input type="number" placeholder="">
-        </div>
-        <div class="field">
-          <label>Rated Power (kW each)</label>
-          <input type="number" placeholder="">
-        </div>
-        <div class="field">
-          <label>Hours / Day</label>
-          <input type="number" placeholder="">
-        </div>
-        <div class="field">
-          <label>Critical Load? (backup needed)</label>
-          <select><option>Yes</option><option>No</option></select>
-        </div>
-        <div class="field">
-          <label>Notes</label>
-          <input type="text" placeholder="">
-        </div>
-      </div>`;
-  } else if (targetId === 'roofList') {
-    card.innerHTML = `
-      <div class="card-header">
-        <div class="card-title">${title}</div>
-        <button type="button" class="btn-remove" onclick="this.closest('.card').remove(); updateProgress();">Remove</button>
-      </div>
-      <div class="field-grid">
-        <div class="field">
-          <label>Roof Type / Material</label>
-          <select><option value="">Select</option><option>IBR / Corrugated Steel</option><option>Klip-Lok / Standing Seam</option><option>Flat Concrete / RC Slab</option><option>Tiled — Clay or Concrete</option><option>Single-Ply Membrane</option><option>Metal Deck</option><option>Thatch / Organic</option><option>Other</option></select>
-        </div>
-        <div class="field">
-          <label>Roof Geometry</label>
-          <select><option value="">Select</option><option>Flat</option><option>Pitched</option><option>Curved</option><option>Multi-level</option></select>
-        </div>
-        <div class="field">
-          <label>Estimated Usable Area (m²)</label>
-          <input type="number" placeholder="">
-        </div>
-        <div class="field">
-          <label>Approximate Dimensions (m)</label>
-          <input type="text" placeholder="e.g. 20m × 15m">
-        </div>
-        <div class="field">
-          <label>Orientation / Azimuth</label>
-          <input type="text" placeholder="e.g. North, 15°">
-        </div>
-        <div class="field">
-          <label>Tilt / Pitch (degrees)</label>
-          <input type="number" placeholder="e.g. 20">
-        </div>
-        <div class="field">
-          <label>Roof Condition (visual)</label>
-          <select><option value="">Select</option><option>Excellent</option><option>Good</option><option>Fair — monitor</option><option>Poor — repair before install</option></select>
-        </div>
-        <div class="field">
-          <label>Approximate Roof Age (years)</label>
-          <input type="number" placeholder="">
-        </div>
-        <div class="field">
-          <label>Obstructions Present</label>
-          <input type="text" placeholder="Vents, HVAC, skylights, pipes">
-        </div>
-        <div class="field">
-          <label>Photo References</label>
-          <select><option>Cellphone images taken</option><option>Drone images taken</option><option>Both</option><option>No images taken</option></select>
-        </div>
-      </div>`;
-  } else if (targetId === 'groundList') {
-    card.innerHTML = `
-      <div class="card-header">
-        <div class="card-title">${title}</div>
-        <button type="button" class="btn-remove" onclick="this.closest('.card').remove(); updateProgress();">Remove</button>
-      </div>
-      <div class="field-grid">
-        <div class="field">
-          <label>Area Name / Reference</label>
-          <input type="text" placeholder="">
-        </div>
-        <div class="field">
-          <label>Estimated Usable Area (m²)</label>
-          <input type="number" placeholder="">
-        </div>
-        <div class="field">
-          <label>Surface Condition</label>
-          <select><option value="">Select</option><option>Concrete</option><option>Gravel</option><option>Compacted soil</option><option>Paved</option><option>Mixed</option><option>Other</option></select>
-        </div>
-        <div class="field">
-          <label>Ground Slope</label>
-          <select><option value="">Select</option><option>Flat</option><option>Slight</option><option>Moderate</option><option>Severe</option></select>
-        </div>
-        <div class="field">
-          <label>Drainage Condition</label>
-          <select><option value="">Select</option><option>Good</option><option>Moderate</option><option>Poor</option></select>
-        </div>
-        <div class="field">
-          <label>Flooding Risk</label>
-          <select><option value="">Select</option><option>None</option><option>Low</option><option>Moderate</option><option>High</option></select>
-        </div>
-        <div class="field">
-          <label>Underground Services Likely?</label>
-          <select><option value="">Select</option><option>Yes</option><option>No</option><option>Unknown</option></select>
-        </div>
-        <div class="field">
-          <label>Geotechnical Verification Needed?</label>
-          <select><option value="">Select</option><option>Yes</option><option>No</option><option>To be confirmed</option></select>
-        </div>
-        <div class="field">
-          <label>Vehicle / Crane Access</label>
-          <select><option value="">Select</option><option>Good — direct access</option><option>Limited</option><option>No access</option></select>
-        </div>
-        <div class="field">
-          <label>Nearby Shading Sources</label>
-          <input type="text" placeholder="Trees, buildings, structures">
-        </div>
-      </div>`;
-  } else if (targetId === 'shadingList') {
-    card.innerHTML = `
-      <div class="card-header">
-        <div class="card-title">${title}</div>
-        <button type="button" class="btn-remove" onclick="this.closest('.card').remove(); updateProgress();">Remove</button>
-      </div>
-      <div class="field-grid">
-        <div class="field">
-          <label>Main Shade Sources</label>
-          <input type="text" placeholder="e.g. Large tree to east, neighbouring building">
-        </div>
-        <div class="field">
-          <label>Time of Observation</label>
-          <input type="time">
-        </div>
-        <div class="field">
-          <label>Hours Affected (estimated)</label>
-          <input type="text" placeholder="e.g. 08:00–11:00">
-        </div>
-        <div class="field">
-          <label>Severity</label>
-          <select><option value="">Select</option><option>Low — partial / edge shading</option><option>Medium — significant but not full</option><option>High — full shading during peak hours</option><option>Exclusion area</option></select>
-        </div>
-        <div class="field">
-          <label>Seasonal Concern</label>
-          <input type="text" placeholder="e.g. Worse in winter (lower sun angle)">
-        </div>
-        <div class="field">
-          <label>Notes</label>
-          <input type="text" placeholder="">
-        </div>
-      </div>`;
-  } else {
-    card.innerHTML = `
-      <div class="card-header">
-        <div class="card-title">${title}</div>
-        <button type="button" class="btn-remove" onclick="this.closest('.card').remove(); updateProgress();">Remove</button>
-      </div>
-      <div class="field-grid">
-        <div class="field"><label>Name</label><input type="text"></div>
-        <div class="field"><label>Value</label><input type="text"></div>
-      </div>`;
-  }
-  document.getElementById(targetId)?.appendChild(card);
-  ensureFieldIdentifiers(card);
-}
-
-function addExtraPhoto() {
-  extraPhotoCount++;
-  const id = `eps${extraPhotoCount}`;
-  const card = document.createElement('div');
-  card.className = 'card';
-  card.innerHTML = `
-    <div class="card-header">
-      <div class="card-title">Additional Photo #${extraPhotoCount}</div>
-      <button type="button" class="btn-remove" onclick="this.closest('.card').remove(); updateProgress();">Remove</button>
-    </div>
-    <div class="field-grid">
-      <div class="field">
-        <label>Subject / Description</label>
-        <input type="text" placeholder="What does this photo show?">
-      </div>
-      <div class="field">
-        <label>Upload</label>
-        <div class="photo-upload-btn">📁 Upload Photo<input type="file" accept="image/*" onchange="previewPhoto(this,'${id}')"></div>
-        <img class="photo-preview" id="prev_${id}" style="margin-top:6px;">
-      </div>
-    </div>`;
-  document.getElementById('extraPhotos')?.appendChild(card);
-  ensureFieldIdentifiers(card);
-}
-
-function previewPhoto(input, slotId) {
-  if (!input.files || !input.files[0]) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const img = document.getElementById(`prev_${slotId}`);
-    if (!img) return;
-    img.src = e.target.result;
-    img.style.display = 'block';
-  };
-  reader.readAsDataURL(input.files[0]);
-}
-
 function pageWasReloaded() {
   const navEntries = performance.getEntriesByType?.('navigation') || [];
   if (navEntries.length && navEntries[0].type === 'reload') return true;
@@ -666,18 +499,30 @@ function clearFormData(form) {
   });
 }
 
+window.ensureFieldIdentifiers = ensureFieldIdentifiers;
+window.submitForm = submitForm;
+window.goTo = goTo;
+window.updateProgress = updateProgress;
+window.getFormValidationIssues = getFormValidationIssues;
+window.goToValidationIssue = goToValidationIssue;
+window.fieldVisible = fieldVisible;
+
 window.addEventListener('load', () => {
   initTheme();
   document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
+
+  if (typeof window.renderSiteForm === 'function') window.renderSiteForm();
+  totalSections = typeof window.getFormSectionCount === 'function' ? window.getFormSectionCount() : 0;
 
   const form = getForm();
   if (!form) return;
   if (pageWasReloaded()) clearFormData(form);
   document.querySelectorAll('button:not([type])').forEach((btn) => { btn.type = 'button'; });
   ensureFieldIdentifiers();
-  generateRef();
   loadDraft();
-  goTo(0);
+  generateRef();
+  if (typeof window.applyFormConditions === 'function') window.applyFormConditions();
+  currentSection = 0;
   updateProgress();
 
   const restored = localStorage.getItem(endpointKey);
@@ -687,6 +532,19 @@ window.addEventListener('load', () => {
   const today = new Date().toISOString().split('T')[0];
   if (dateField && !dateField.value) dateField.value = today;
 
-  document.addEventListener('change', () => { updateProgress(); });
-  document.addEventListener('input', () => { updateProgress(); });
+  document.getElementById('warnings')?.addEventListener('click', (event) => {
+    const btn = event.target.closest('[data-goto-issue]');
+    if (!btn) return;
+    const index = Number(btn.dataset.gotoIssue);
+    const { fields, photos } = getFormValidationIssues();
+    const issue = [...fields, ...photos][index];
+    if (issue) goToValidationIssue(issue);
+  });
+
+  document.addEventListener('input', (event) => {
+    if (event.target.matches('input, select, textarea')) clearValidationHighlights();
+  });
+  document.addEventListener('change', (event) => {
+    if (event.target.matches('input, select, textarea')) clearValidationHighlights();
+  });
 });
