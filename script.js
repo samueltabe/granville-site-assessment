@@ -44,13 +44,52 @@ function initTheme() {
 
 let toastTimer = null;
 
-function showToast(message, duration = 4500) {
+function showToast(message, duration = 4500, variant = 'default') {
   const toast = document.getElementById('toast');
   if (!toast) return;
   toast.textContent = message;
+  toast.classList.remove('toast-success', 'toast-error');
+  if (variant === 'success') toast.classList.add('toast-success');
+  if (variant === 'error') toast.classList.add('toast-error');
   toast.classList.add('show');
   if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove('show'), duration);
+  toastTimer = setTimeout(() => {
+    toast.classList.remove('show');
+    toast.classList.remove('toast-success', 'toast-error');
+  }, duration);
+}
+
+function hideSubmitSuccess() {
+  document.getElementById('submitSuccess')?.classList.add('hidden');
+}
+
+function showSubmitSuccess(message, meta = '') {
+  const overlay = document.getElementById('submitSuccess');
+  const messageEl = document.getElementById('submitSuccessMessage');
+  const metaEl = document.getElementById('submitSuccessMeta');
+  if (!overlay || !messageEl) {
+    showToast(message, 8000, 'success');
+    return;
+  }
+
+  messageEl.textContent = message;
+  if (metaEl) {
+    if (meta) {
+      metaEl.textContent = meta;
+      metaEl.classList.remove('hidden');
+    } else {
+      metaEl.textContent = '';
+      metaEl.classList.add('hidden');
+    }
+  }
+
+  overlay.classList.remove('hidden');
+  showToast(message, 6000, 'success');
+
+  const lastSection = Math.max(0, totalSections - 1);
+  if (typeof window.goToFormSection === 'function') window.goToFormSection(lastSection);
+
+  document.getElementById('submitSuccessDismiss')?.focus();
 }
 
 function slugify(value) {
@@ -470,15 +509,35 @@ async function submitForm() {
 
     let data = null;
     const contentType = response.headers.get('content-type') || '';
-    if (contentType.includes('application/json')) data = await response.json();
+    if (contentType.includes('application/json')) {
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        data = null;
+      }
+    }
     if (!response.ok) {
-      showToast(data?.message || `Submission failed (${response.status})`);
+      showToast(data?.message || `Submission failed (${response.status})`, 7000, 'error');
       return;
     }
-    showToast('Data sent successfully');
+
+    const successMessage =
+      data?.message ||
+      data?.data?.message ||
+      'Your site assessment was submitted successfully. The Granville Energy team can now review it.';
+
+    const reference =
+      data?.reference_id ||
+      data?.referenceId ||
+      data?.data?.reference_id ||
+      data?.data?.id ||
+      data?.id;
+
+    const meta = reference ? `Reference: ${reference}` : '';
+    showSubmitSuccess(successMessage, meta);
     localStorage.setItem(draftKey, JSON.stringify(collectDraftData()));
   } catch (error) {
-    showToast(error.message || 'Submission failed');
+    showToast(error.message || 'Submission failed', 7000, 'error');
   }
 }
 
@@ -567,6 +626,11 @@ function initSiteAssessmentApp() {
   if (submitBtn && !submitBtn.dataset.defaultLabel) {
     submitBtn.dataset.defaultLabel = submitBtn.textContent.trim();
   }
+
+  document.getElementById('submitSuccessDismiss')?.addEventListener('click', hideSubmitSuccess);
+  document.getElementById('submitSuccess')?.addEventListener('click', (event) => {
+    if (event.target.id === 'submitSuccess') hideSubmitSuccess();
+  });
 }
 
 window.initSiteAssessmentApp = initSiteAssessmentApp;

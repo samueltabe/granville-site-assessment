@@ -50,10 +50,19 @@
     </main>
   </div>
 
-  <div class="toast" id="toast"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <div class="boot-error hidden" id="bootError" role="alert"></div>
-  <script src="./form-builder.js?v=1.1.2"></script>
-  <script src="./script.js?v=1.1.2"></script>
+  <div class="submit-success hidden" id="submitSuccess" role="dialog" aria-modal="true" aria-labelledby="submitSuccessTitle">
+    <div class="submit-success-card">
+      <div class="submit-success-icon" aria-hidden="true">✓</div>
+      <h2 id="submitSuccessTitle">Assessment submitted</h2>
+      <p id="submitSuccessMessage">Your site assessment was sent to the server successfully.</p>
+      <p class="submit-success-meta hidden" id="submitSuccessMeta"></p>
+      <button type="button" class="primary-btn" id="submitSuccessDismiss">Done</button>
+    </div>
+  </div>
+  <script src="./form-builder.js?v=1.1.3"></script>
+  <script src="./script.js?v=1.1.3"></script>
   <script>
     function showBootError(message) {
       const el = document.getElementById('bootError');

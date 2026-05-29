@@ -760,6 +760,86 @@ textarea:focus {
   pointer-events: auto;
 }
 
+.toast.toast-success {
+  border-color: rgba(76, 175, 125, 0.65);
+  background: rgba(76, 175, 125, 0.12);
+  color: #23734d;
+  font-weight: 650;
+}
+
+.toast.toast-error {
+  border-color: rgba(224, 82, 82, 0.55);
+  background: rgba(224, 82, 82, 0.1);
+  color: #9f3030;
+  font-weight: 650;
+}
+
+.submit-success {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(17, 24, 39, 0.45);
+  backdrop-filter: blur(3px);
+}
+
+.submit-success-card {
+  width: min(480px, 100%);
+  padding: 28px 26px 24px;
+  border-radius: 10px;
+  border: 1px solid rgba(76, 175, 125, 0.45);
+  background: var(--surface);
+  text-align: center;
+  box-shadow: 0 20px 48px rgba(17, 24, 39, 0.22);
+  animation: success-pop 220ms ease;
+}
+
+@keyframes success-pop {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.submit-success-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  border-radius: 999px;
+  background: rgba(76, 175, 125, 0.15);
+  border: 2px solid var(--success);
+  color: var(--success);
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.submit-success-card h2 {
+  margin: 0 0 10px;
+  font-size: 1.35rem;
+  color: var(--text);
+}
+
+.submit-success-card p {
+  margin: 0 0 8px;
+  color: var(--text-2);
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+.submit-success-meta {
+  margin-bottom: 18px !important;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.submit-success-card .primary-btn {
+  width: 100%;
+  margin-top: 8px;
+}
+
 #submitBtn:disabled {
   opacity: 0.72;
   cursor: wait;
