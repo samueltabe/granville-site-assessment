@@ -745,8 +745,8 @@
           }
           return;
         }
-        if (event.target.id === "submitBtn" && typeof window.submitForm === "function") {
-          buildWarnings(true);
+        if (event.target.closest("#submitBtn") && typeof window.submitForm === "function") {
+          event.preventDefault();
           window.submitForm();
         }
       });

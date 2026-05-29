@@ -42,12 +42,15 @@ function initTheme() {
   applyTheme(saved === 'dark' ? 'dark' : 'light');
 }
 
-function showToast(message) {
+let toastTimer = null;
+
+function showToast(message, duration = 4500) {
   const toast = document.getElementById('toast');
   if (!toast) return;
   toast.textContent = message;
   toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2500);
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), duration);
 }
 
 function slugify(value) {
@@ -546,6 +549,24 @@ function initSiteAssessmentApp() {
   document.addEventListener('change', (event) => {
     if (event.target.matches('input, select, textarea')) clearValidationHighlights();
   });
+
+  form.addEventListener('click', (event) => {
+    const submitBtn = event.target.closest('#submitBtn');
+    if (!submitBtn) return;
+    event.preventDefault();
+    event.stopPropagation();
+    submitForm();
+  });
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    submitForm();
+  });
+
+  const submitBtn = document.getElementById('submitBtn');
+  if (submitBtn && !submitBtn.dataset.defaultLabel) {
+    submitBtn.dataset.defaultLabel = submitBtn.textContent.trim();
+  }
 }
 
 window.initSiteAssessmentApp = initSiteAssessmentApp;

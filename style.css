@@ -757,6 +757,12 @@ textarea:focus {
 .toast.show {
   opacity: 1;
   transform: translateY(0);
+  pointer-events: auto;
+}
+
+#submitBtn:disabled {
+  opacity: 0.72;
+  cursor: wait;
 }
 
 [data-theme="dark"] {
