@@ -167,16 +167,14 @@ aside {
   height: 28px;
   border-radius: 999px;
   border: 1px solid var(--border-strong);
-  background: var(--surface);
+  background: #fff;
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 760;
 }
 
 .step-link.active .step-num {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: #fff;
+  color: var(--text);
 }
 
 .step-title {
@@ -718,22 +716,6 @@ textarea:focus {
   fill: none;
   stroke: currentColor;
   stroke-width: 2.25px;
-}
-
-.step-link.done .step-num {
-  border-color: var(--success);
-  background: rgba(76, 175, 125, 0.15);
-  color: #23734d;
-}
-
-.step-link.has-error {
-  border-color: rgba(224, 82, 82, 0.4);
-  background: rgba(224, 82, 82, 0.08);
-}
-
-.step-link.has-error .step-num {
-  border-color: var(--danger);
-  color: var(--danger);
 }
 
 .toast {

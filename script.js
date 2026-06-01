@@ -386,9 +386,7 @@ function updateNavChecks() {
     if (!nav) return;
     const hasInput = sectionHasAnyUserInput(section);
     const done = hasInput && sectionIsComplete(section);
-    const hasError = Boolean(findSectionValidationError(section));
     nav.classList.toggle('done', done);
-    nav.classList.toggle('has-error', hasError);
   });
 }
 
