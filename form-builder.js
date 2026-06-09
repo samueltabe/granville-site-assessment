@@ -36,7 +36,7 @@
             f("Reference ID", "text", { id: "refId", placeholder: "Auto-generated or project reference" }),
             f("Date of Assessment", "date", { id: "assessDate", required: true }),
             f("Start Time", "time"),
-            f("End Time", "time")
+            
           ]},
           { title: "Remote Assessment", condition: "remote", fields: [
             f("Data Source(s)", "textarea", { placeholder: "Client photos, satellite view, drawings, video call..." }),
@@ -77,7 +77,6 @@
             f("Postal / ZIP Code", "text"),
             f("GPS Latitude", "number", { required: true, step: "any" }),
             f("GPS Longitude", "number", { required: true, step: "any" }),
-            f("What3Words", "text"),
             f("Site Elevation", "text", { placeholder: "m above sea level" })
           ]},
           { title: "Site Access & Operations", fields: [
@@ -116,8 +115,7 @@
           { title: "Battery & Backup", fields: [
             f("Battery Storage Required", "select", { options: options.yesNo }),
             f("Required Backup Duration", "text", { placeholder: "Hours or business requirement" }),
-            f("Critical Loads to Back Up", "textarea", { full: true }),
-            f("Preferred Battery Chemistry", "select", { options: ["Select", "LFP", "NMC", "Lead-acid", "No preference", "Unknown"] })
+            f("Critical Loads to Back Up", "textarea", { full: true })
           ]},
           { title: "Additional Requirements", fields: [
             f("EV Charging Required", "select", { options: options.yesNo }),
@@ -125,6 +123,46 @@
             f("Future Expansion Planned", "select", { options: options.yesNo }),
             f("Future Expansion Details", "textarea"),
             f("Any Other Client Requirements or Preferences", "textarea", { full: true })
+          ]}
+        ]
+      },
+      {
+        tag: "Can complete later",
+        title: "Energy & Consumption Data",
+        intro: "Bills, tariff details, interval data, 12-month consumption, load schedule, peak demand, and load profile inputs move after the physical assessment.",
+        notice: "Energy & Consumption Data - Office / Client-Supplied. These fields should not block site visit submission when documents are pending.",
+        groups: [
+          { title: "Data Availability", fields: [
+            f("What consumption data is available?", "select", { options: options.dataAvailability, id: "consumptionData" }),
+            f("Bills to be Provided By", "text", { condition: "billsLater" }),
+            f("Expected By", "date", { condition: "billsLater" }),
+            f("Known Average Monthly Consumption", "text", { placeholder: "kWh" }),
+            f("Known Peak Demand", "text", { placeholder: "kVA / kW" }),
+            f("Tariff / Meter Photo Reference", "text")
+          ]},
+          { title: "Bill Upload & Summary", condition: "bills", fields: [
+            f("Months Available", "number"),
+            f("Upload Utility Bills", "file"),
+            f("12-Month Consumption Table", "textarea", { full: true, placeholder: "Month, kWh, demand, cost..." })
+          ]},
+          { title: "Interval / Load Profile Data", fields: [
+            f("Upload Interval Data", "file"),
+            f("Data Resolution", "select", { options: ["Select", "5-minute", "15-minute", "30-minute", "Hourly", "Daily", "Other"] }),
+            f("Period Covered", "text")
+          ]},
+          { title: "New Building / No History", condition: "newBuilding", fields: [
+            f("Load Schedule", "textarea", { full: true }),
+            f("Add Load Item", "textarea", { full: true, placeholder: "Load, quantity, rating, hours, criticality..." })
+          ]},
+          { title: "Key Consumption Figures", fields: [
+            f("Average Monthly Consumption", "text", { placeholder: "kWh" }),
+            f("Peak Demand", "text", { placeholder: "kVA / kW" }),
+            f("Tariff Category / Name", "text"),
+            f("Tariff Structure", "text"),
+            f("Load Profile Confidence", "select", { options: options.confidence }),
+            f("Seasonal Variation", "select", { options: ["Select", "Low", "Moderate", "High", "Unknown"] }),
+            f("Day vs Night Load Behaviour", "textarea"),
+            f("Weekday vs Weekend Variation", "textarea")
           ]}
         ]
       },
@@ -253,6 +291,46 @@
       },
       {
         tag: "Must complete on site",
+        title: "Proposed Equipment Locations",
+        intro: "Inverter, BESS, ventilation, fire separation, access, weather protection, security, and equipment-area photos remain together.",
+        groups: [
+          { title: "Inverter Location", fields: [
+            f("Proposed Inverter Location", "text", { required: true }),
+            f("Specific Location Description", "textarea"),
+            f("Distance: Inverter Location to Main DB", "text", { required: true, placeholder: "m" }),
+            f("Wall Mounting Possible", "select", { options: options.yesNo }),
+            f("Ventilation at Inverter Location", "select", { options: ["Select", "Good", "Adequate", "Poor", "Needs mechanical ventilation"] }),
+            f("Ambient Temp at Inverter Location", "text"),
+            f("Approximate Available Space", "text"),
+            f("Lockable / Security Controlled", "select", { options: options.yesNo }),
+            f("Protected from Rain / Direct Sun", "select", { options: options.yesNo }),
+            f("Noise Concern", "select", { options: options.yesNo }),
+            f("Cellular / WiFi Signal Available", "select", { options: options.yesNo })
+          ]},
+          { title: "BESS Location", fields: [
+            f("BESS Required", "select", { options: ["Select", "Yes", "No", "To be confirmed"], id: "bessRequired" }),
+            f("BESS Location Type", "select", { condition: "bess", options: ["Select", "Indoor", "Outdoor", "Containerised", "Plant room", "To be confirmed"] }),
+            f("Specific BESS Location", "textarea", { condition: "bess" }),
+            f("Distance: BESS to Inverter", "text", { condition: "bess", placeholder: "m" }),
+            f("Distance: BESS to Main DB", "text", { condition: "bess", placeholder: "m" }),
+            f("Available Dimensions", "text", { condition: "bess" }),
+            f("Ground / Floor Loading", "text", { condition: "bess" }),
+            f("Ventilation Adequacy", "select", { condition: "bess", options: ["Select", "Good", "Adequate", "Poor", "Needs review"] }),
+            f("Fire Separation Available", "select", { condition: "bess", options: options.yesNo }),
+            f("Vehicle / Crane Access to BESS Area", "select", { condition: "bess", options: options.yesNo }),
+            f("Insurance / Fire Suppression Requirements", "textarea", { condition: "bess", full: true })
+          ]},
+          photos("Embedded equipment photos", [
+            p("Proposed inverter location", true),
+            p("Proposed BESS location", false, "bess"),
+            p("Available wall / floor space", true),
+            p("Equipment delivery path", false),
+            p("Fire separation concerns", false, "bess")
+          ])
+        ]
+      },
+      {
+        tag: "Must complete on site",
         title: "Roof / Ground / Carport Installation Area",
         intro: "PV mounting areas, roof access, shading, environmental exposure, and working-at-height fields are now captured while the technician is in the PV area.",
         groups: [
@@ -322,46 +400,6 @@
       },
       {
         tag: "Must complete on site",
-        title: "Proposed Equipment Locations",
-        intro: "Inverter, BESS, ventilation, fire separation, access, weather protection, security, and equipment-area photos remain together.",
-        groups: [
-          { title: "Inverter Location", fields: [
-            f("Proposed Inverter Location", "text", { required: true }),
-            f("Specific Location Description", "textarea"),
-            f("Distance: Inverter Location to Main DB", "text", { required: true, placeholder: "m" }),
-            f("Wall Mounting Possible", "select", { options: options.yesNo }),
-            f("Ventilation at Inverter Location", "select", { options: ["Select", "Good", "Adequate", "Poor", "Needs mechanical ventilation"] }),
-            f("Ambient Temp at Inverter Location", "text"),
-            f("Approximate Available Space", "text"),
-            f("Lockable / Security Controlled", "select", { options: options.yesNo }),
-            f("Protected from Rain / Direct Sun", "select", { options: options.yesNo }),
-            f("Noise Concern", "select", { options: options.yesNo }),
-            f("Cellular / WiFi Signal Available", "select", { options: options.yesNo })
-          ]},
-          { title: "BESS Location", fields: [
-            f("BESS Required", "select", { options: ["Select", "Yes", "No", "To be confirmed"], id: "bessRequired" }),
-            f("BESS Location Type", "select", { condition: "bess", options: ["Select", "Indoor", "Outdoor", "Containerised", "Plant room", "To be confirmed"] }),
-            f("Specific BESS Location", "textarea", { condition: "bess" }),
-            f("Distance: BESS to Inverter", "text", { condition: "bess", placeholder: "m" }),
-            f("Distance: BESS to Main DB", "text", { condition: "bess", placeholder: "m" }),
-            f("Available Dimensions", "text", { condition: "bess" }),
-            f("Ground / Floor Loading", "text", { condition: "bess" }),
-            f("Ventilation Adequacy", "select", { condition: "bess", options: ["Select", "Good", "Adequate", "Poor", "Needs review"] }),
-            f("Fire Separation Available", "select", { condition: "bess", options: options.yesNo }),
-            f("Vehicle / Crane Access to BESS Area", "select", { condition: "bess", options: options.yesNo }),
-            f("Insurance / Fire Suppression Requirements", "textarea", { condition: "bess", full: true })
-          ]},
-          photos("Embedded equipment photos", [
-            p("Proposed inverter location", true),
-            p("Proposed BESS location", false, "bess"),
-            p("Available wall / floor space", true),
-            p("Equipment delivery path", false),
-            p("Fire separation concerns", false, "bess")
-          ])
-        ]
-      },
-      {
-        tag: "Must complete on site",
         title: "Cable Route Walkdown",
         intro: "DC, AC, comms, route-specific earthing/bonding notes, trenching, penetrations, road crossings, civil works, and route photos are captured while walking the route.",
         notice: "Tip: Walk the likely cable route on site. Measure or pace distances where possible. Flag obstacles, road crossings, roof/wall penetrations, trenching, and cable tray needs.",
@@ -409,46 +447,6 @@
         ]
       },
       {
-        tag: "Can complete later",
-        title: "Energy & Consumption Data",
-        intro: "Bills, tariff details, interval data, 12-month consumption, load schedule, peak demand, and load profile inputs move after the physical assessment.",
-        notice: "Energy & Consumption Data - Office / Client-Supplied. These fields should not block site visit submission when documents are pending.",
-        groups: [
-          { title: "Data Availability", fields: [
-            f("What consumption data is available?", "select", { options: options.dataAvailability, id: "consumptionData" }),
-            f("Bills to be Provided By", "text", { condition: "billsLater" }),
-            f("Expected By", "date", { condition: "billsLater" }),
-            f("Known Average Monthly Consumption", "text", { placeholder: "kWh" }),
-            f("Known Peak Demand", "text", { placeholder: "kVA / kW" }),
-            f("Tariff / Meter Photo Reference", "text")
-          ]},
-          { title: "Bill Upload & Summary", condition: "bills", fields: [
-            f("Months Available", "number"),
-            f("Upload Utility Bills", "file"),
-            f("12-Month Consumption Table", "textarea", { full: true, placeholder: "Month, kWh, demand, cost..." })
-          ]},
-          { title: "Interval / Load Profile Data", fields: [
-            f("Upload Interval Data", "file"),
-            f("Data Resolution", "select", { options: ["Select", "5-minute", "15-minute", "30-minute", "Hourly", "Daily", "Other"] }),
-            f("Period Covered", "text")
-          ]},
-          { title: "New Building / No History", condition: "newBuilding", fields: [
-            f("Load Schedule", "textarea", { full: true }),
-            f("Add Load Item", "textarea", { full: true, placeholder: "Load, quantity, rating, hours, criticality..." })
-          ]},
-          { title: "Key Consumption Figures", fields: [
-            f("Average Monthly Consumption", "text", { placeholder: "kWh" }),
-            f("Peak Demand", "text", { placeholder: "kVA / kW" }),
-            f("Tariff Category / Name", "text"),
-            f("Tariff Structure", "text"),
-            f("Load Profile Confidence", "select", { options: options.confidence }),
-            f("Seasonal Variation", "select", { options: ["Select", "Low", "Moderate", "High", "Unknown"] }),
-            f("Day vs Night Load Behaviour", "textarea"),
-            f("Weekday vs Weekend Variation", "textarea")
-          ]}
-        ]
-      },
-      {
         tag: "Office / follow-up",
         title: "Documents Received / Pending",
         intro: "Document tracking is split out from assessor notes so owners, due dates, uploads, and design-blocking gaps are clear.",
@@ -463,6 +461,7 @@
             f("Risk Flags / Red Flags Identified", "textarea", { id: "riskFlags", full: true }),
             f("Recommended Next Steps / Action Items", "textarea", { full: true }),
             f("Follow-Up Visit Required", "select", { options: options.yesNo, id: "followUpRequired" }),
+            f("End Time", "time"),
             f("General Assessment Notes & Special Conditions", "textarea", { full: true })
           ]},
           { title: "Photo Completion Summary", custom: "photoSummary" },

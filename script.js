@@ -1,5 +1,7 @@
 let currentSection = 0;
 let totalSections = 0;
+let isSubmitting = false;
+let submitProgressTimer = null;
 const draftKey = 'ge_draft';
 const endpointKey = 'ge_submit_endpoint';
 const themeKey = 'ge_theme';
@@ -61,6 +63,64 @@ function showToast(message, duration = 4500, variant = 'default') {
 
 function hideSubmitSuccess() {
   document.getElementById('submitSuccess')?.classList.add('hidden');
+}
+
+function setSubmitLoadingProgress(value) {
+  const bar = document.getElementById('submitLoadingBar');
+  const text = document.getElementById('submitLoadingText');
+  const progress = Math.max(0, Math.min(100, Math.round(value)));
+  if (bar) bar.style.width = `${progress}%`;
+  if (text) text.textContent = `${progress}%`;
+}
+
+function showSubmitLoading() {
+  const overlay = document.getElementById('submitLoading');
+  if (!overlay) return;
+
+  clearInterval(submitProgressTimer);
+  setSubmitLoadingProgress(0);
+  overlay.classList.remove('hidden');
+  overlay.setAttribute('aria-hidden', 'false');
+
+  let progress = 0;
+  submitProgressTimer = setInterval(() => {
+    if (progress < 88) {
+      progress += Math.random() * 7 + 1.5;
+      setSubmitLoadingProgress(Math.min(88, progress));
+    }
+  }, 220);
+
+  const submitBtn = document.getElementById('submitBtn');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting…';
+  }
+}
+
+function hideSubmitLoading(complete = false) {
+  clearInterval(submitProgressTimer);
+  submitProgressTimer = null;
+
+  const overlay = document.getElementById('submitLoading');
+  if (complete) setSubmitLoadingProgress(100);
+
+  const finish = () => {
+    overlay?.classList.add('hidden');
+    overlay?.setAttribute('aria-hidden', 'true');
+    setSubmitLoadingProgress(0);
+
+    const submitBtn = document.getElementById('submitBtn');
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = submitBtn.dataset.defaultLabel || 'Submit Assessment';
+    }
+  };
+
+  if (complete) {
+    setTimeout(finish, 320);
+  } else {
+    finish();
+  }
 }
 
 function showSubmitSuccess(message, meta = '') {
@@ -474,6 +534,8 @@ function buildSubmissionFormData() {
 }
 
 async function submitForm() {
+  if (isSubmitting) return;
+
   clearValidationHighlights();
   const { fields, photos } = getFormValidationIssues();
   const blocking = [...fields, ...photos];
@@ -498,6 +560,9 @@ async function submitForm() {
     endpoint = resolveSubmitEndpoint();
   }
 
+  isSubmitting = true;
+  showSubmitLoading();
+
   try {
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -515,9 +580,12 @@ async function submitForm() {
       }
     }
     if (!response.ok) {
+      hideSubmitLoading(false);
       showToast(data?.message || `Submission failed (${response.status})`, 7000, 'error');
       return;
     }
+
+    hideSubmitLoading(true);
 
     const successMessage =
       data?.message ||
@@ -535,7 +603,10 @@ async function submitForm() {
     showSubmitSuccess(successMessage, meta);
     localStorage.setItem(draftKey, JSON.stringify(collectDraftData()));
   } catch (error) {
+    hideSubmitLoading(false);
     showToast(error.message || 'Submission failed', 7000, 'error');
+  } finally {
+    isSubmitting = false;
   }
 }
 

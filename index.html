@@ -52,6 +52,21 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <div class="boot-error hidden" id="bootError" role="alert"></div>
+  <div class="submit-loading hidden" id="submitLoading" role="dialog" aria-modal="true" aria-labelledby="submitLoadingTitle" aria-hidden="true">
+    <div class="submit-loading-card">
+      <h2 id="submitLoadingTitle">Submitting assessment</h2>
+      <p class="submit-loading-message">Uploading form data and photos. Please keep this page open.</p>
+      <div class="submit-loading-progress">
+        <div class="submit-loading-meta">
+          <span>Upload progress</span>
+          <span id="submitLoadingText">0%</span>
+        </div>
+        <div class="progress-track submit-loading-track">
+          <div class="progress-bar submit-loading-bar" id="submitLoadingBar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="submit-success hidden" id="submitSuccess" role="dialog" aria-modal="true" aria-labelledby="submitSuccessTitle">
     <div class="submit-success-card">
       <div class="submit-success-icon" aria-hidden="true">✓</div>
